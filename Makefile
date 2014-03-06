@@ -1,14 +1,17 @@
 
-MAIN_CLASS=Jimcom.java
+
+SRC_PATH=jimcom/
+BUILD_PATH=build/
+MAIN_CLASS=Jimcom
 
 JVM=java
 JAVAC=javac -Xlint:unchecked
 
 all:
-	$(JAVAC) $(MAIN_CLASS)
+	$(JAVAC) -d $(BUILD_PATH) $(SRC_PATH)$(MAIN_CLASS).java
 
 clean :
-	rm -f *.class
+	rm -f $(BUILD_PATH)*.class
 
 run : all
-	@$(JVM) $(MAIN_CLASS)
+	cd $(BUILD_PATH) && $(JVM) $(SRC_PATH)$(MAIN_CLASS)
