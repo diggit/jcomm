@@ -13,7 +13,7 @@
 
 //	author bachapat aka diggit
 
-package com.xtech.app.jimcom;
+package org.xtech.app.jimcom;
 
 public class Storage
 {
