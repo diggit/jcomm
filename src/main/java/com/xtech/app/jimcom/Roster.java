@@ -13,7 +13,7 @@
 
 //	author bachapat aka diggit
 
-package com.xtech.app.jimcom;
+package org.xtech.app.jimcom;
 
 import java.net.*;
 
@@ -25,11 +25,11 @@ public class Roster
 
 	private DefaultListModel<Contact> contactList;
 
-	Gui mainwindow;
-	Roster(Gui mainwindow)
-	{
-		this.mainwindow=mainwindow;//needed for contact list refreshing
-	}
+	//Gui mainwindow;
+	// Roster(Gui mainwindow)
+	// {
+	// 	this.mainwindow=mainwindow;//needed for contact list refreshing
+	// }
 	public void loadStoredContacts()
 	{
 		;
