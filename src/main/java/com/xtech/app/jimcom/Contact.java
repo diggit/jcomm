@@ -13,9 +13,48 @@
 
 //	author bachapat aka diggit
 
-package jimcom;
+package com.xtech.app.jimcom;
 
-public class Storage
+import java.net.InetAddress;
+import java.net.Socket;
+
+public class Contact
 {
+	//basic ID
+	private String nickname;
+	private String figerprint;
+	//extended ID
+	
+	//last seen, last ip,...
+
+	//session only
+	Socket sck; //socket to this contact
+	boolean isOnline;
+	InetAddress ip;
+
+	public String getNickname()
+	{
+		return nickname;
+	}
+	public String getFingerprint()
+	{
+		return figerprint;
+	}
+
+	Contact(String nick, String fp)
+	{
+		nickname=nick;
+		figerprint=fp;
+	}
+
+	@Override
+	public String toString()
+	{
+		if(ip==null)
+			return nickname+"(off)";
+		else
+			return nickname+"("+ip.getHostAddress()+")";
+	}
+
 	
 }

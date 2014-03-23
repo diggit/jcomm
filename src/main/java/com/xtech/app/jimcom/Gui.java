@@ -13,7 +13,7 @@
 
 //	author bachapat aka diggit
 
-package jimcom;
+package com.xtech.app.jimcom;
 
 import java.awt.event.*;
 import javax.swing.*;

@@ -13,7 +13,7 @@
 
 //	author bachapat aka diggit
 
-package jimcom;
+package com.xtech.app.jimcom;
 
 import java.net.*;
 import java.io.*;
@@ -24,44 +24,35 @@ public class Jimcom
 	
 	public static void main(String args[])
 	{
-		//start GUI, forking (non blocking)
-		Gui mainWindow ;
-		// SwingUtilities.invokeLater(new Runnable()
+		
+		GuiFX mw=new GuiFX();
+		mw.show();
+		return;//terminate here for now...
+
+		// Socket client=null;
+		// while(true)//listen for incomming connections
 		// {
-		// 	public void run()
+		// 	try
 		// 	{
-				mainWindow = new Gui();
-				mainWindow.setVisible(true);
+		// 		ServerSocket server=new ServerSocket(42917);
+		// 		System.out.println("socket opened, waiting for incomming cons...");
+		// 		client=server.accept();
+		// 		System.out.println("got incomming con! processing...");
+		// 		//ros.serveIncommingConnection(client);
 		// 	}
-		// });
 
-		//test contact
-		Contact me=new Contact ("me","my_fp");
-
-
-		Roster ros=new Roster(mainWindow);
-
-		Socket client=null;
-		while(true)//listen for incomming connections
-		{
-			try
-			{
-				ServerSocket server=new ServerSocket(42917);
-				System.out.println("socket opened, waiting for incomming cons...");
-				client=server.accept();
-				System.out.println("got incomming con! processing...");
-				ros.serveIncommingConnection(client);
-			}
-
-			catch (IOException e)
-			{
-				System.out.println("Accept failed: 4321");
-				System.exit(-1);
-			}
+		// 	catch (IOException e)
+		// 	{
+		// 		System.out.println("Accept failed: 4321");
+		// 		System.exit(-1);
+		// 	}
 
 			
 
-		}
+		// }
+
+
+		
 		// public static void main(String[] args)
 	// {
 	// 	try
