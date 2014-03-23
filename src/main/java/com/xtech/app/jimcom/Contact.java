@@ -13,7 +13,7 @@
 
 //	author bachapat aka diggit
 
-package com.xtech.app.jimcom;
+package org.xtech.app.jimcom;
 
 import java.net.InetAddress;
 import java.net.Socket;
