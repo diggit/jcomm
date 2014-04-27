@@ -7,7 +7,7 @@
 <?import javafx.scene.paint.*?>
 <?import javafx.scene.text.*?>
 
-<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="900.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.xtech.app.jimcom.GuiFXController">
+<VBox fx:id="topBox" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.xtech.app.jimcom.GuiFXController">
   <children>
     <MenuBar VBox.vgrow="NEVER">
       <menus>
@@ -28,28 +28,39 @@
           </items>
         </Menu>
       </menus>
-    </MenuBar><GridPane maxWidth="1.7976931348623157E308" VBox.vgrow="ALWAYS">
-  <columnConstraints>
-    <ColumnConstraints hgrow="NEVER" maxWidth="1.7976931348623157E308" minWidth="-Infinity" prefWidth="230.0" />
-    <ColumnConstraints hgrow="ALWAYS" maxWidth="1.7976931348623157E308" prefWidth="670.0" />
-  </columnConstraints>
-  <rowConstraints>
-    <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
-  </rowConstraints>
-<children><BorderPane layoutX="-86.0" layoutY="172.5" prefHeight="200.0" prefWidth="200.0">
-<center><ListView maxWidth="1.7976931348623157E308" minWidth="-Infinity" prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER" />
-</center>
-<bottom><ComboBox fx:id="statusBox" centerShape="false" depthTest="DISABLE" maxWidth="1.7976931348623157E308" minWidth="-Infinity" BorderPane.alignment="CENTER" />
-</bottom>
-<top><Button fx:id="hider" layoutX="6.2275390625" layoutY="-5.5" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#handleButtonAction" onMouseClicked="#clicked" text="HIDE" BorderPane.alignment="CENTER" />
-</top></BorderPane><SplitPane dividerPositions="0.7832422586520947" focusTraversable="true" layoutX="14.0" layoutY="153.0" orientation="VERTICAL" prefHeight="200.0" prefWidth="160.0" GridPane.columnIndex="1">
-  <items><BorderPane prefHeight="200.0" prefWidth="200.0">
-<center><TextArea editable="false" prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER" />
-</center></BorderPane><TextArea layoutX="118.0" layoutY="188.0" prefHeight="200.0" prefWidth="200.0" />
-  </items>
-</SplitPane>
-</children>
-</GridPane>
+    </MenuBar>
+    <GridPane fx:id="grid" maxWidth="1.7976931348623157E308" VBox.vgrow="ALWAYS">
+      <columnConstraints>
+        <ColumnConstraints hgrow="NEVER" maxWidth="1.7976931348623157E308" minWidth="-Infinity" prefWidth="230.0" />
+        <ColumnConstraints hgrow="ALWAYS" maxWidth="1.7976931348623157E308" prefWidth="670.0" />
+      </columnConstraints>
+      <rowConstraints>
+        <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+      </rowConstraints>
+      <children>
+        <BorderPane layoutX="-86.0" layoutY="172.5" prefHeight="200.0" prefWidth="200.0">
+          <center>
+            <ListView fx:id="contactList" maxWidth="1.7976931348623157E308" minWidth="-Infinity" prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER" />
+          </center>
+          <bottom>
+            <ComboBox fx:id="statusBox" centerShape="false" depthTest="DISABLE" maxWidth="1.7976931348623157E308" minWidth="-Infinity" BorderPane.alignment="CENTER" />
+          </bottom>
+          <top>
+            <Button fx:id="hider" layoutX="6.2275390625" layoutY="-5.5" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#handleButtonAction" onMouseClicked="#clicked" text="HIDE" BorderPane.alignment="CENTER" />
+          </top>
+        </BorderPane>
+        <SplitPane dividerPositions="0.7832422586520947" focusTraversable="true" layoutX="14.0" layoutY="153.0" orientation="VERTICAL" prefHeight="200.0" prefWidth="160.0" GridPane.columnIndex="1">
+          <items>
+            <BorderPane prefHeight="200.0" prefWidth="200.0">
+              <center>
+                <TextArea editable="false" prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER" />
+              </center>
+            </BorderPane>
+            <TextArea layoutX="118.0" layoutY="188.0" prefHeight="200.0" prefWidth="200.0" />
+          </items>
+        </SplitPane>
+      </children>
+    </GridPane>
     <HBox id="HBox" alignment="CENTER_LEFT" spacing="5.0" VBox.vgrow="NEVER">
       <children>
         <Label maxHeight="1.7976931348623157E308" maxWidth="-1.0" text="Left status" HBox.hgrow="ALWAYS">
