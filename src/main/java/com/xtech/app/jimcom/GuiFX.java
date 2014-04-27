@@ -15,61 +15,94 @@
 
 package org.xtech.app.jimcom;
 
-import javafx.application.Application;
-import javafx.scene.Scene;
-import javafx.scene.layout.VBox;
-import javafx.stage.Stage;
-import javafx.fxml.FXMLLoader;
-import javafx.fxml.JavaFXBuilderFactory;
+//package imports
+import org.xtech.app.jimcom.*;
 
+//various imports
 import java.io.IOException;
-import org.xtech.app.jimcom.GuiFXController;
-//import javafx.fxml.FXML;
+import java.lang.NullPointerException;
+import java.util.*;
+import java.net.URL;
+
+//javafx imports (oh jeez...)
+
+import javafx.application.Application;
+import javafx.fxml.JavaFXBuilderFactory;
+import javafx.fxml.FXMLLoader;
+import javafx.fxml.FXML;
+import javafx.event.ActionEvent;
+import javafx.scene.*;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.input.MouseButton;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Button;
+import javafx.scene.control.ListView;
+import javafx.stage.*;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.VBox;
+import javafx.collections.*;
 
 //wooo, we are getting deeper!
-public class GuiFX extends Application {
+public class GuiFX extends Application
+{
+    private Roster roster;
+    private Logger logger;
 
-    private GuiFXController controller=null;
+    // public GuiFX()
+    // {
+    //     ;
+    // }
+
+    // public GuiFX(Logger logger)
+    // {
+    //     this.logger=logger;
+    // }
+
+    public void show()
+    {
+        Application.launch(GuiFX.class, (java.lang.String[])null); //blocking
+    }
+
+    private GuiFXController controller;
+
+    //private ObservableList<Contact> contacts = FXCollections.observableArrayList();
 
     @Override
     public void start(Stage primaryStage) {
+        //logger.log("loading GUI contents...",Severity.INFO);
         
+        URL style=getClass().getResource("../../../../mainWindow.fxml");
         VBox page=null;
+
         FXMLLoader fxmlLoader = new FXMLLoader();
-        fxmlLoader.setLocation(getClass().getResource("../../../../mainWindow.fxml"));
+        // fxmlLoader.setLocation(getClass().getResource("../../../../mainWindow.fxml"));
         fxmlLoader.setBuilderFactory(new JavaFXBuilderFactory());
-
-        controller=fxmlLoader.getController();
-
+        
+        
         try
         {
-            page = (VBox) fxmlLoader.load();
+            page = (VBox) fxmlLoader.load(style.openStream());
         }
         catch (IOException ioe)
         {
+            //logger.log("----UNABLE TO LOAD LAYOUT FILE----",Severity.ERR);
             ioe.printStackTrace();
         }
 
+        controller=fxmlLoader.getController();
+        if(controller==null)
+            throw new NullPointerException("refference to controller was null!");
 
+        roster=new Roster(controller);
+        roster.start();
 
-
+        
 
         primaryStage.setTitle("JIMcom");
-        //primaryStage.setWidth(320);
-        //primaryStage.setHeight(200);
 
         Scene scene = new Scene(page);
         primaryStage.setScene(scene);
-
         primaryStage.show();
-
-
-        controller=fxmlLoader.getController();
-
-
     }
-
-    public static void show() {
-        Application.launch(GuiFX.class, (java.lang.String[])null); //blocking
-  }
 }
