@@ -17,6 +17,7 @@ package org.xtech.app.jimcom;
 
 import java.net.*;
 import java.io.*;
+import java.lang.Thread;
 
 
 
@@ -25,67 +26,15 @@ public class Jimcom
 	
 	public static void main(String args[])
 	{
+		//Logger logger=new Logger("jimcom.log");
 		
 		GuiFX mw=new GuiFX();
+		
 		mw.show();
 
+		//logger.close();
 
 		return;//terminate here for now...
 
-		// Socket client=null;
-		// while(true)//listen for incomming connections
-		// {
-		// 	try
-		// 	{
-		// 		ServerSocket server=new ServerSocket(42917);
-		// 		System.out.println("socket opened, waiting for incomming cons...");
-		// 		client=server.accept();
-		// 		System.out.println("got incomming con! processing...");
-		// 		//ros.serveIncommingConnection(client);
-		// 	}
-
-		// 	catch (IOException e)
-		// 	{
-		// 		System.out.println("Accept failed: 4321");
-		// 		System.exit(-1);
-		// 	}
-
-			
-
-		// }
-
-
-		
-		// public static void main(String[] args)
-	// {
-	// 	try
-	// 	{
-	// 		ServerSocket server=new ServerSocket(42917);
-	// 		System.out.println("server");
-	// 		Socket client=server.accept();
-	// 		System.out.println("client");
-
-	// 		BufferedReader in = new BufferedReader(
-	// 		new InputStreamReader(client.getInputStream()));
-	// 		PrintWriter out = new PrintWriter(client.getOutputStream(),true);
-	// 	}
-
-	// 	catch (IOException e)
-	// 	{
-	// 		System.out.println("Accept failed: 4321");
-	// 		System.exit(-1);
-	// 	}
-	// 	System.out.println("init done");
-
-
 	}
-
-
-		
-
-		
-
-
-
-	
 }
