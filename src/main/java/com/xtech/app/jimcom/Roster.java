@@ -15,45 +15,98 @@
 
 package org.xtech.app.jimcom;
 
+import org.xtech.app.jimcom.*;
+
 import java.net.*;
+import java.io.*;
+import java.util.*;
+import java.lang.NullPointerException;
+import java.lang.InterruptedException;
+import java.lang.Thread;
 
-import javax.swing.DefaultListModel;
+import javafx.application.Platform;
 
-//whis class (Thread) serves 
-public class Roster
+
+//all the work is done here
+public class Roster extends Thread
 {
+	private List<Contact> contactList;
 
-	private DefaultListModel<Contact> contactList;
+	GuiFXController controller;
+	Roster(GuiFXController controller)
+	{
+		if(controller==null)
+			throw new NullPointerException("refference to controller was null!");
+		this.controller=controller;
+		contactList=new ArrayList();
+	}
 
-	//Gui mainwindow;
-	// Roster(Gui mainwindow)
-	// {
-	// 	this.mainwindow=mainwindow;//needed for contact list refreshing
-	// }
+	public void run()
+	{
+		// loadStoredContacts()
+
+		System.out.println("testing...");
+
+		Contact c2=new Contact("FLOLED","none");
+        addContact(c2);
+        
+
+        Listener listener=new Listener(this,5564);
+        listener.start();//start listener to receive incomming connections
+
+        serve();
+	}
+
+	private void serve()
+	{
+		while(true)
+		{
+			System.out.println("updatting contact list...");
+			// for (Contact c : contactList)
+			// {
+
+			// }
+			Platform.runLater(new Runnable(){public void run() {controller.updateContactListView(contactList);}});
+			try
+			{
+				this.sleep(10000);
+			}
+			catch(InterruptedException ex)
+			{
+				System.out.println("roster woken from sleep");
+			}
+		}
+	}
+
+	
+
 	public void loadStoredContacts()
 	{
 		;
 	}
 
-    void addContact(Contact newContact)
+    synchronized void addContact(Contact newContact)
     {
     	System.out.println("adding: "+newContact);
     	Contact item;
     	boolean listed=false;
 
-    	//check, that newContact is not already listed
-    	for(int i = 0; i < contactList.getSize(); i++)
+    	if(!contactList.contains(newContact))
     	{
-    		item=contactList.getElementAt(i);
-			//System.out.println(item.getNickname());
-			if(	item.getNickname()==newContact.getNickname() &&
-				item.getFingerprint()==newContact.getFingerprint() )
-				listed=true;
-		}
-		if (!listed)
-    		contactList.addElement(newContact);
+    		System.out.println("adding contact...");
+    		contactList.add(newContact);
+
+    		Platform.runLater(new Runnable(){public void run() {controller.updateContactListView(contactList);}});
+			//OR
+			//JRE8 only
+			//Platform.runLater(() -> controller.updateContactListView(contactList));
+    		newContact.start();
+    		System.out.println("done");
+    	}
     	else
+    	{
     		System.out.println("this Contact is already listed");
+    	}
     }
 
 	public void updateAvailability()
@@ -66,7 +119,90 @@ public class Roster
 	}
 	public void	serveIncommingConnection(Socket incomming)
 	{
-		;
+		BufferedReader in=null;//our incomming stream
+		Roster roster;//instance of roster, which to report incomming events
+		boolean running;
+		final int retries=3;
+		PrintWriter out;
+
+		try
+			{incomming.setSoTimeout(1000);}//timeout for reading???
+		catch(SocketException ex)
+			{System.out.println("unable to set timeout");}
+
+		try
+		{
+			in = new BufferedReader(new InputStreamReader(incomming.getInputStream()));
+		}
+		catch (IOException ex)
+		{
+			System.out.println("connection lost...");
+		}
+
+		try
+			{out = new PrintWriter(incomming.getOutputStream(),true);}
+		catch(IOException ex)
+		{
+			System.out.println("no outputStream");
+			return;
+		}
+		
+
+		out.print("identify\n");
+		
+		String response="";
+		try
+			{response=in.readLine();}//blocking
+		catch(IOException ex)
+			{System.out.println("response not received in time");}
+		if(!response.equals("jimcom"))
+		{
+			System.out.println("incomming connection does not belong to jimcom app...");
+			return;
+		}
+		out.print("ID");
+		try
+			{response=in.readLine();}//blocking
+		catch(IOException ex)
+			{System.out.println("response not received in time");}
+
+		
 	}
 	
 }
+
+//  class Reader extends Thread
+// {
+// 	private Socket sck;
+// 	private BufferedReader in=null;//our incomming stream
+// 	private Roster roster;//instance of roster, which to report incomming events
+// 	private boolean running;
+// 	private final int retries=3;
+
+// 	public void run()
+// 	{
+// 		for(int retry=0;retry<retries && in==null;retry++)
+// 		{
+// 			try
+// 			{
+// 				in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+// 			}
+// 			catch (IOException ex)
+// 			{
+// 				System.out.println("unable to open stream for reading, retriing...");
+// 			}
+// 		}
+// 		if(in==null)
+// 		{	
+// 			System.out.println(retries+" of reconnection failed, giving up!");
+// 			return;
+// 		}
+// 		System.out.println("got input stream");
+// 	}
+
+// 	public Reader(Socket socket, Roster roster)
+// 	{
+// 		this.sck=socket;
+// 		this.roster=roster;
+// 	}
+// 	//PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
