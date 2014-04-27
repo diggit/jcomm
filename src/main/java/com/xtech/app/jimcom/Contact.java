@@ -15,15 +15,23 @@
 
 package org.xtech.app.jimcom;
 
-import java.net.InetAddress;
-import java.net.Socket;
+import org.xtech.app.jimcom.Message;
 
-public class Contact
-{
+import java.util.ArrayList;
+import java.net.*;
+import java.io.*;
+import java.lang.Thread;
+
+public class Contact extends Thread
+{	
+
+	private int port;
 	//basic ID
 	private String nickname;
 	private String figerprint;
-	//extended ID
+	
+	//message history
+	ArrayList<Message> messageHistory=new ArrayList<Message>();
 	
 	//last seen, last ip,...
 
@@ -31,6 +39,50 @@ public class Contact
 	Socket sck; //socket to this contact
 	boolean isOnline;
 	InetAddress ip;
+
+	private BufferedReader in=null;//our incomming stream
+	private PrintWriter out = null;
+
+
+	public void run()//handling connection
+	{
+		String rawIncomming;
+		if(ip==null || port==0)
+		{
+			System.out.println("you must setup connection first!");
+			return;
+		}
+		else
+		{
+			this.connect();
+			try
+			{
+				rawIncomming=this.read();
+				//TODO:parse incomming
+
+				messageHistory.add(new Message(rawIncomming,this));
+				//notify somethig?
+			}
+			catch (IOException ex)
+			{
+				System.out.println(nickname+" unable to read incomming message!");
+			}
+		}
+
+	}
+
+	
+	Contact(String nick, String fp)
+	{
+		nickname=nick;
+		figerprint=fp;
+	}
+
+	public void setConnection(InetAddress ip,int port)
+	{
+		this.ip=ip;
+		this.port=port;
+	}
 
 	public String getNickname()
 	{
@@ -41,11 +93,45 @@ public class Contact
 		return figerprint;
 	}
 
-	Contact(String nick, String fp)
+	public boolean connect()
 	{
-		nickname=nick;
-		figerprint=fp;
+
+		try
+		{
+			sck = new Socket(ip,port);
+		}
+		catch (IOException e)
+		{
+			System.out.println(nickname+"connection failed, host is probably down...");
+			//System.out.println(e);
+			return false;
+		}
+
+		try
+		{
+			in = new BufferedReader(new InputStreamReader(sck.getInputStream()));
+		}
+		catch (IOException ex)
+		{
+			System.out.println(nickname+"can't establish input stream!");
+			return false;
+		}
+
+		try
+		{
+			out = new PrintWriter(sck.getOutputStream(),true);
+		}
+		catch(IOException ex)
+		{
+			System.out.println(nickname+"can't establish output stream");
+			return false;
+		}
+
+		System.out.println(nickname+"connection established");
+		return true;
 	}
+
+
 
 	@Override
 	public String toString()
@@ -56,5 +142,37 @@ public class Contact
 			return nickname+"("+ip.getHostAddress()+")";
 	}
 
+	@Override
+	public boolean equals(Object o)
+	{
+		if(o==null)
+			return false;
+		Contact eq=(Contact)o;
+		return nickname.equals(eq.getNickname())&&figerprint.equals(eq.getFingerprint());
+		
+	}
+
+	@Override
+	public int hashCode()
+	{
+		int hash=3;
+		hash+=nickname.hashCode()*5;
+		hash+=figerprint.hashCode()*13;
+		return hash;
+	}
+
+	private String read() throws IOException
+	{
+		//if(!isOnline)
+		// throw new IOException("contact is not online, can't read input");
+
+		
+		String message=in.readLine();
+		System.out.println("got incomming message: "+message);
+		return message;
+
+	}
+
 	
 }
+
