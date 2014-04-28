@@ -22,63 +22,240 @@ import java.net.*;
 import java.io.*;
 import java.lang.Thread;
 
-public class Contact extends Thread
+public class Contact extends Thread implements Identity
 {	
 
-	private int port;
+	private Identity localID;
 	//basic ID
 	private String nickname;
 	private String figerprint;
 	
 	//message history
-	ArrayList<Message> messageHistory=new ArrayList<Message>();
+	private volatile ArrayList<Message> messageHistory=new ArrayList<Message>();
 	
 	//last seen, last ip,...
 
 	//session only
-	Socket sck; //socket to this contact
-	boolean isOnline;
-	InetAddress ip;
+	private volatile Socket sck; //socket to this contact
+	private volatile boolean online=false;
+	private volatile InetAddress ip;
+	private volatile int port;
 
-	private BufferedReader in=null;//our incomming stream
-	private PrintWriter out = null;
+	private BufferedReader in;//our incomming stream
+	private PrintWriter out;
+
+	//handling connection
+	public void run()
+	{
+
+		while(true)
+		{
+			if(!online)
+			{	
+				if(connect())
+				{
+					targetState state=handshake();
+					shout("HANDSHAKE over");
+					try
+						{this.sck.setSoTimeout(0);}//reset timeout back to infinity
+					catch(SocketException ex)
+						{shout("unable to RESET socket SO timeout!");}
 
 
-	public void run()//handling connection
+					if(state==targetState.MATCH)
+					{
+						shout("target identity match!");
+						online=true;
+					}
+					else
+					{
+						shout("due to unsuccessful connection attempt, closing socket...");
+						try
+							{sck.close();}
+						catch(IOException e)
+							{shout("closing failed, probably closed");}
+
+
+						//TODO: (40) what to do in case of mismatch? some GUI?
+						if (state==targetState.PROTOCOL_ERROR)
+						{
+							shout("encountered error during handshake, opponents port is probably occupied by some different process...");
+						}
+						else
+						{
+							shout("failed to create&verify oponent");
+						}
+
+
+					}
+
+					
+
+				}
+
+				if(!online)//when connection was not succ. opened, wait and retry...
+				{
+					try
+						{this.sleep(10000);}
+					catch(InterruptedException ex)
+						{shout("forced to reconnect!");}		
+				}
+			}
+			else //we are online (in case of success of connection attempt above, loop will be looped one more time to get here, but who cares...)
+			{
+				
+				try
+				{
+					shout("waiting for message...");
+					//TODO: (20) handle incomming events/messages
+					shout("incomming message: "+in.readLine());
+				}
+				catch(IOException ex)
+				{
+					online=false;
+					try
+						{sck.close();}
+					catch(IOException e)
+						{shout("closing failed, probably closed");}
+				}
+
+			}
+
+
+		}
+	}
+	public boolean isOnline()
+	{
+		return online;
+	}
+
+	private targetState handshake()
 	{
 		String rawIncomming;
-		if(ip==null || port==0)
-		{
-			System.out.println("you must setup connection first!");
-			return;
-		}
-		else
-		{
-			this.connect();
-			try
-			{
-				rawIncomming=this.read();
-				//TODO:parse incomming
+		targetState output;
 
-				messageHistory.add(new Message(rawIncomming,this));
-				//notify somethig?
-			}
-			catch (IOException ex)
+		try
+			{this.sck.setSoTimeout(1000);}//for case of missing response
+		catch(SocketException ex)
+		{
+			shout("unable to set socket SO timeout!");
+			return targetState.PROTOCOL_ERROR;
+		}
+		
+
+	//tell the other side who am I
+		String buf=Protocol.authRequest(this);
+		out.println(buf);
+		//out.flush();
+		shout("AUTH request sent...");
+
+	//read response
+		try
+		{
+			rawIncomming=in.readLine();
+			if(rawIncomming.equals(Protocol.RESPONSE_HEAD))
 			{
-				System.out.println(nickname+" unable to read incomming message!");
+				shout("receiving&parsing response...");
+			}
+			else
+				return targetState.PROTOCOL_ERROR;
+
+			rawIncomming=in.readLine();
+			if(rawIncomming.equals(Protocol.SUCCESS))
+			{
+				shout("AUTH phase successful!");
+			
+				//read target identity
+				rawIncomming=in.readLine();
+				shout("read: "+rawIncomming);
+
+					
+				//verify matching ID
+				try
+				{
+					Identity identity=Protocol.parseIdentity(rawIncomming);
+					shout("parsed identity: "+identity);
+					if(identity.equals(this))//if remote identity matches expected one
+					{
+						shout("target ID matching!");
+						output=targetState.MATCH;
+					}
+					else
+					{
+						shout("target ID NOT matching!");
+						output=targetState.MISMATCH;
+					}	
+				}
+				catch(ProtocolException ex)
+				{
+					shout("protocol ERROR!");
+					shout(ex.getMessage());
+					return targetState.PROTOCOL_ERROR;
+				}
+				shout("verification over");
+
+
+			}
+			else if (rawIncomming.equals(Protocol.FAIL))
+			{
+				shout("authentification rejected!");
+				output=targetState.NOT_FOUND;
+			}
+			else
+			{
+				shout("unknown response value:"+rawIncomming);
+				output=targetState.PROTOCOL_ERROR;
+			}
+
+		//parse esponse endtag
+			shout("looking for endtag...");
+			if (in.readLine().equals(Protocol.RESPONSE_TAIL))
+			{
+				shout("endtag found");
+				return output;
+			}
+			else
+			{
+				shout("protocol error, missing response endtag");
+				return targetState.PROTOCOL_ERROR;
 			}
 		}
-
+		catch(SocketTimeoutException ex)
+		{
+			shout("target not responded in time!");
+			return targetState.PROTOCOL_ERROR;
+		}
+		catch(IOException ex)
+		{
+			shout("IOException");
+			shout(ex.getMessage());
+			return targetState.PROTOCOL_ERROR;
+		}
 	}
 
 	
-	Contact(String nick, String fp)
+	Contact(String nick, String fp,InetAddress ip,int port, Identity localID)
 	{
-		nickname=nick;
-		figerprint=fp;
+		this.nickname=nick;
+		this.figerprint=fp;
+		this.ip=ip;
+		this.port=port;
+		this.localID=localID;
 	}
 
-	public void setConnection(InetAddress ip,int port)
+	Contact(Identity id,Socket connection, Identity localID)
+	{
+		this.nickname=id.getNickname();
+		this.figerprint=id.getFingerprint();
+		this.sck=connection;//already valid connection
+		this.ip=connection.getInetAddress();
+		this.port=connection.getPort();
+		this.localID=localID;
+		this.online=true;
+	}
+
+
+	public void setConnection()
 	{
 		this.ip=ip;
 		this.port=port;
@@ -93,18 +270,26 @@ public class Contact extends Thread
 		return figerprint;
 	}
 
+	public ArrayList<Message> getMessages()
+	{
+		return messageHistory;
+	}
+
 	public boolean connect()
 	{
-
-		try
+		shout("trying to connect");
+		if(sck==null || sck.isClosed())
 		{
-			sck = new Socket(ip,port);
-		}
-		catch (IOException e)
-		{
-			System.out.println(nickname+"connection failed, host is probably down...");
-			//System.out.println(e);
-			return false;
+			try
+			{
+				sck = new Socket(ip,port);
+			}
+			catch (IOException e)
+			{
+				shout("connection failed, host is probably down...");
+				//shout(e);
+				return false;
+			}
 		}
 
 		try
@@ -113,7 +298,7 @@ public class Contact extends Thread
 		}
 		catch (IOException ex)
 		{
-			System.out.println(nickname+"can't establish input stream!");
+			shout("can't establish input stream!\n"+ex.getMessage());
 			return false;
 		}
 
@@ -123,12 +308,23 @@ public class Contact extends Thread
 		}
 		catch(IOException ex)
 		{
-			System.out.println(nickname+"can't establish output stream");
+			shout("can't establish output stream");
 			return false;
 		}
 
-		System.out.println(nickname+"connection established");
+		shout("connection established");
 		return true;
+	}
+
+	public void bindSocket(Socket incommmingSocket)
+	{
+		shout("binding incomming socket to contact");
+		this.sck=incommmingSocket;
+		this.ip=sck.getInetAddress();
+		this.port=sck.getPort();
+		this.connect();//attach reader and writer
+		this.online=true;
+		this.interrupt();//proceed immediate connection
 	}
 
 
@@ -136,19 +332,20 @@ public class Contact extends Thread
 	@Override
 	public String toString()
 	{
-		if(ip==null)
-			return nickname+"(off)";
-		else
+		if(online)
 			return nickname+"("+ip.getHostAddress()+")";
+		else
+			return nickname+"(off)";
 	}
 
 	@Override
 	public boolean equals(Object o)
 	{
+		// shout("testing equality...");
 		if(o==null)
 			return false;
 		Contact eq=(Contact)o;
-		return nickname.equals(eq.getNickname())&&figerprint.equals(eq.getFingerprint());
+		return this.nickname.equals(eq.getNickname())&&this.figerprint.equals(eq.getFingerprint());
 		
 	}
 
@@ -163,16 +360,23 @@ public class Contact extends Thread
 
 	private String read() throws IOException
 	{
-		//if(!isOnline)
+		//if(!online)
 		// throw new IOException("contact is not online, can't read input");
 
 		
-		String message=in.readLine();
-		System.out.println("got incomming message: "+message);
+		String message=in.readLine().trim();
+		shout("got incomming message: "+message);
 		return message;
 
 	}
 
-	
+	private void shout(String text)
+	{
+		//opt TODO@34: use logger
+		System.out.println("CONTACT ("+nickname+"): "+text);
+	}
+
+	enum targetState
+	{MATCH,MISMATCH,NOT_FOUND,PROTOCOL_ERROR}
 }
 
