@@ -23,15 +23,17 @@ import java.util.Calendar;
 public class Message
 {
 	private final String msg;
-	private final Contact contact;
+	private final Identity identity;
+	private final Direction direction;
 
 	Calendar cal;
 	SimpleDateFormat sdf;
 
-	public Message(String text, Contact contact)
+	public Message(String text, Identity identity, Direction direction)
 	{
 		this.msg=text;
-		this.contact=contact;
+		this.identity=identity;
+		this.direction=direction;
 		this.cal = Calendar.getInstance();
 		this.sdf = new SimpleDateFormat("[HH:mm:ss]");
 	}
@@ -39,7 +41,7 @@ public class Message
 	@Override
 	public String toString()
 	{
-		return sdf.format(cal.getTime())+" "+contact.getNickname()+": "+msg;
+		return sdf.format(cal.getTime())+" "+identity.getNickname()+": "+msg;
 	}
 
 	public String getRaw()
@@ -47,14 +49,20 @@ public class Message
 		return msg;
 	}
 
-	public Contact getContact()
+	public Identity getIdentity()
 	{
-		return contact;
+		return identity;
+	}
+
+	public Direction getDirection()
+	{
+		return this.direction;
 	}
 
 
-	public String getFormatedData()
-	{
-		return "<content type=text_message>"+this.msg+"</content><contact nickname="+contact.getNickname()+" fingerprint="+contact.getFingerprint()+" />";
-	}
+	// public String getFormatedData()
+	// {
+	// 	return "<identity nickname="+identity.getNickname()+" fingerprint="+identity.getFingerprint()+" />\n"
+	// 			+"<content type=text_message>\n"+this.msg+"\n</content>\ngetNickname";
+	// }
 }
