@@ -34,7 +34,7 @@ public class Jimcom
 
 		//logger.close();
 
-		return;//terminate here for now...
+		return;
 
 	}
 }
