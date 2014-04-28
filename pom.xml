@@ -2,9 +2,6 @@
   <!-- model version is always 4.0.0 for Maven 2.x POMs -->
   <modelVersion>4.0.0</modelVersion>
  
-  <!-- project coordinates, i.e. a group of values which
-       uniquely identify this project -->
- 
   <groupId>org.xtech.app</groupId>
   <artifactId>jimcom</artifactId>
   <version>1.0</version>
@@ -20,7 +17,10 @@
     </dependency>
   </dependencies>
   
-
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+  
   <build>
     <plugins>
       <plugin>
