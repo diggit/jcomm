@@ -24,6 +24,7 @@ public class Listener extends Thread
 {
 	private final Roster roster;
 	private final int port;
+
 	public Listener(Roster roster,int port)
 	{
 		this.roster=roster;
@@ -34,23 +35,44 @@ public class Listener extends Thread
 	public void run()	
 	{
 		Socket client=null;
+		ServerSocket server=null;
+
+		while(server==null)
+		{
+			try
+			{
+				server=new ServerSocket(this.port);
+			}
+			catch(IOException ex)
+			{
+				shout("cannot create server on this port!");
+				shout(ex.getMessage());
+			}
+			shout("socket opened, waiting for incomming cons...");
+		}
+
 		while(true)//listen for incomming connections
 		{
 			try
 			{
-				ServerSocket server=new ServerSocket(this.port);
-				System.out.println("socket opened, waiting for incomming cons...");
 				client=server.accept();
-				System.out.println("got incomming con! processing...");
-				//ros.serveIncommingConnection(client);
-				//give new socket to Roster, which will identify other side and process request...
+				shout("got incomming con! processing...");
+				roster.serveIncommingConnection(client);//give new socket to Roster, which will identify other side and process request...
 			}
 
-			catch (IOException e)
+			catch (IOException ex)
 			{
-				System.out.println("Accept failed on port: "+this.port);
-
+				shout("Accept failed on port: "+this.port);
+				shout(ex.getMessage());
 			}
+
+				
 		}
+	}
+
+	private void shout(String text)
+	{
+		//opt TODO: (90) use logger
+		System.out.println("LISTENER: "+text);
 	}
 }
