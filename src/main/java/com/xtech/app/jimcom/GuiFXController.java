@@ -24,14 +24,20 @@ import javafx.event.ActionEvent;
 import javafx.scene.*;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.MouseButton;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent; 
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Button;
 import javafx.scene.control.ListView;
+import javafx.scene.control.TextArea;
 import javafx.stage.*;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.text.Text;
 import javafx.scene.layout.VBox;
+
 import javafx.collections.*;
+
 
 import java.util.*;
 import java.net.URL;
@@ -46,10 +52,12 @@ public class GuiFXController implements Initializable
 	@FXML protected ComboBox<Status> statusBox;
     @FXML protected GridPane grid;
     @FXML protected VBox topBox;
-    @FXML protected Stage primaryStage;
+    @FXML protected Stage primaryStage,stage;
     @FXML protected Button hider;
     @FXML protected ListView contactList;
-	
+	@FXML protected TextArea typingArea;
+    @FXML protected TextArea messageArea;
+    Contact lastSelectedContact;
 
 	@Override
 	public void initialize(URL url, ResourceBundle rb)
@@ -59,6 +67,7 @@ public class GuiFXController implements Initializable
 			Status.Offline);
 		statusBox.getSelectionModel().select(Status.Offline);
 		//statusBox.setSelectedIndex(0);
+        lastSelectedContact=null;
 	}
 
     public synchronized void updateContactListView(List<Contact> contacts)
@@ -74,5 +83,49 @@ public class GuiFXController implements Initializable
     @FXML
     private void handleButtonAction(ActionEvent event) {
         System.out.println("You clicked me!");
+        Stage stage = new Stage();
+        stage.setScene(new Scene(new Group(new Text(10,10, "my second window"))));
+        stage.show();
+    }
+
+    @FXML
+    private void handleKeyAction( KeyEvent keyEvent)
+    {
+        if (keyEvent.getCode() == KeyCode.ENTER) {
+            // setPressed(keyEvent.getEventType()
+            //     == KeyEvent.KEY_PRESSED);
+
+            keyEvent.consume();
+            System.out.println("ENTER PRESSED");
+
+            messageArea.appendText(typingArea.getText());
+            typingArea.clear();
+        }
+    }
+
+    
+
+    @FXML
+    private void handleContactSelection( MouseEvent event)
+    {
+        Contact selectedContact=(Contact)contactList.getSelectionModel().getSelectedItem();
+        if(selectedContact!=lastSelectedContact)//proceed if chosen contact was changed only
+        {
+            System.out.println("contact selected: "+selectedContact);
+            lastSelectedContact=selectedContact;
+            typingArea.setDisable(false);
+            messageArea.setDisable(false);
+
+            String buffer="";
+            for (Message msg : selectedContact.getMessages())
+            {
+                    buffer+=msg+"\n";
+            }
+            messageArea.setText(buffer);
+
+
+
+            
+        }
     }
 }
