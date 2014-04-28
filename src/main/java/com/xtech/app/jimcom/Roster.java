@@ -30,7 +30,9 @@ import javafx.application.Platform;
 //all the work is done here
 public class Roster extends Thread
 {
-	private List<Contact> contactList;
+
+	private Identity local;
+	private volatile List<Contact> contactList;
 
 	GuiFXController controller;
 	Roster(GuiFXController controller)
@@ -39,16 +41,17 @@ public class Roster extends Thread
 			throw new NullPointerException("refference to controller was null!");
 		this.controller=controller;
 		contactList=new ArrayList();
+		local=new SimpleIdentity("xorly","somehash");
 	}
+
 
 	public void run()
 	{
-		// loadStoredContacts()
+		loadStoredContacts();
 
-		System.out.println("testing...");
+		shout("testing...");
 
-		Contact c2=new Contact("FLOLED","none");
-        addContact(c2);
+
         
 
         Listener listener=new Listener(this,5564);
@@ -61,19 +64,20 @@ public class Roster extends Thread
 	{
 		while(true)
 		{
-			System.out.println("updatting contact list...");
-			// for (Contact c : contactList)
-			// {
-
-			// }
+			shout("updatting contact list...");
+			for (Contact c : contactList)
+			{
+				shout("contact: "+c.getNickname());
+			}
+			shout("updated, sleeping...");
 			Platform.runLater(new Runnable(){public void run() {controller.updateContactListView(contactList);}});
 			try
 			{
-				this.sleep(10000);
+				this.sleep(30000);
 			}
 			catch(InterruptedException ex)
 			{
-				System.out.println("roster woken from sleep");
+				shout("roster woken from sleep");
 			}
 		}
 	}
@@ -82,18 +86,31 @@ public class Roster extends Thread
 
 	public void loadStoredContacts()
 	{
-		;
+		
+		try
+		{
+			// Contact c2=new Contact("FLOLED","none",InetAddress.getByAddress(new byte[]{127, 0, 0, 1}),5564,local);
+			// addContact(c2);
+
+			Contact c3=new Contact("xorly","somehash",InetAddress.getByAddress(new byte[]{127, 0, 0, 1}),5564,local);
+			addContact(c3);
+
+		}
+		catch(UnknownHostException ex)
+			{shout("wrong ip format!");}
+		shout("all contacts loaded!");
+        
 	}
 
     synchronized void addContact(Contact newContact)
     {
-    	System.out.println("adding: "+newContact);
+    	shout("adding: "+newContact);
     	Contact item;
     	boolean listed=false;
 
     	if(!contactList.contains(newContact))
     	{
-    		System.out.println("adding contact...");
+    		shout("adding contact...");
     		contactList.add(newContact);
 
     		Platform.runLater(new Runnable(){public void run() {controller.updateContactListView(contactList);}});
@@ -101,72 +118,113 @@ public class Roster extends Thread
 			//JRE8 only
 			//Platform.runLater(() -> controller.updateContactListView(contactList));
     		newContact.start();
-    		System.out.println("done");
+    		shout("done");
     	}
     	else
     	{
-    		System.out.println("this Contact is already listed");
+    		shout("this Contact is already listed");
     	}
     }
 
 	public void updateAvailability()
 	{
-		;
+		Platform.runLater(new Runnable(){public void run() {controller.updateContactListView(contactList);}});
 	}
 	public void transmitStatusChange()
 	{
 		;
 	}
-	public void	serveIncommingConnection(Socket incomming)
+	public boolean	serveIncommingConnection(Socket incommingConnection)
 	{
-		BufferedReader in=null;//our incomming stream
-		Roster roster;//instance of roster, which to report incomming events
+		shout("serving incomming connection...");
+		BufferedReader in=null;//our incommingConnection stream
+		Roster roster;//instance of roster, which to report incommingConnection events
 		boolean running;
 		final int retries=3;
 		PrintWriter out;
 
 		try
-			{incomming.setSoTimeout(1000);}//timeout for reading???
+			{incommingConnection.setSoTimeout(1000);}//timeout for reading
 		catch(SocketException ex)
-			{System.out.println("unable to set timeout");}
+			{shout("unable to set timeout"); return false;}
 
 		try
 		{
-			in = new BufferedReader(new InputStreamReader(incomming.getInputStream()));
+			in = new BufferedReader(new InputStreamReader(incommingConnection.getInputStream()));
 		}
 		catch (IOException ex)
 		{
-			System.out.println("connection lost...");
+			shout("no InputStream");
+			return false;
 		}
 
 		try
-			{out = new PrintWriter(incomming.getOutputStream(),true);}
+			{out = new PrintWriter(incommingConnection.getOutputStream(),true);}
 		catch(IOException ex)
 		{
-			System.out.println("no outputStream");
-			return;
+			shout("no outputStream");
+			return false;
 		}
+
+		shout("opened I/O streams to new contact...");
 		
 
-		out.print("identify\n");
-		
-		String response="";
 		try
-			{response=in.readLine();}//blocking
-		catch(IOException ex)
-			{System.out.println("response not received in time");}
-		if(!response.equals("jimcom"))
 		{
-			System.out.println("incomming connection does not belong to jimcom app...");
-			return;
+			shout("receiving&parsing tansmission...");
+			if(in.readLine().trim().equals(Protocol.TRANSMISSION_HEAD))
+			{
+				shout("got TRANSMISSION_HEAD!");
+
+				Identity incommingIdentity=Protocol.parseIdentity(in.readLine().trim());
+
+
+				if(in.readLine().trim().equals(Protocol.AUTH))
+				{
+					shout("AUTH request received!");
+
+					if(in.readLine().trim().equals(Protocol.TRANSMISSION_TAIL))//correctly closed tags
+					{
+						shout("dataframe properly closed, YEAH!");
+						int index=contactList.indexOf(incommingIdentity);
+						if(index>=0)//if identity is already in list
+						{
+							shout("contact "+incommingIdentity+" exists in database, binding socket...");
+							//TODO: (10) send OK response with ID
+							out.println(Protocol.authResponseAccept(local));
+							//contactList.get(index).bindSocket(incommingConnection);	
+						}
+						else
+						{
+							shout("contact "+incommingIdentity+" not yet known");
+							//TODO: (20) do some decisions, accept or not? user interraction needed - GUI
+							this.addContact(new Contact(incommingIdentity,incommingConnection,local));
+						}
+						updateAvailability();
+						return true;
+					}
+				}
+
+					
+			}
+			
+			shout("wrong protocol format!");
 		}
-		out.print("ID");
-		try
-			{response=in.readLine();}//blocking
 		catch(IOException ex)
-			{System.out.println("response not received in time");}
+		{
+			shout("no client request, timeout!");
+		}
+		
+		return false;
 
 		
+
+		
+	}
+	private void shout(String text)
+	{
+		//opt TODO: (90) use logger
+		System.out.println("ROSTER: "+text);
 	}
 	
 }
