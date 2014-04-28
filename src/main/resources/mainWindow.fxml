@@ -11,18 +11,9 @@
   <children>
     <MenuBar VBox.vgrow="NEVER">
       <menus>
-        <Menu mnemonicParsing="false" text="File">
+        <Menu mnemonicParsing="false" text="General">
           <items>
-            <MenuItem mnemonicParsing="false" text="New" />
-            <MenuItem mnemonicParsing="false" text="Open…" />
-            <Menu mnemonicParsing="false" text="Open Recent" />
-            <SeparatorMenuItem mnemonicParsing="false" />
-            <MenuItem mnemonicParsing="false" text="Close" />
-            <MenuItem mnemonicParsing="false" text="Save" />
-            <MenuItem mnemonicParsing="false" text="Save As…" />
-            <MenuItem mnemonicParsing="false" text="Revert" />
-            <SeparatorMenuItem mnemonicParsing="false" />
-            <MenuItem mnemonicParsing="false" text="Preferences…" />
+            <MenuItem mnemonicParsing="false" text="Add contact" />
             <SeparatorMenuItem mnemonicParsing="false" />
             <MenuItem mnemonicParsing="false" text="Quit" />
           </items>
@@ -40,7 +31,7 @@
       <children>
         <BorderPane layoutX="-86.0" layoutY="172.5" prefHeight="200.0" prefWidth="200.0">
           <center>
-            <ListView fx:id="contactList" maxWidth="1.7976931348623157E308" minWidth="-Infinity" prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER" />
+            <ListView fx:id="contactList" onMouseClicked="#handleContactSelection" maxWidth="1.7976931348623157E308" minWidth="-Infinity" prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER" />
           </center>
           <bottom>
             <ComboBox fx:id="statusBox" centerShape="false" depthTest="DISABLE" maxWidth="1.7976931348623157E308" minWidth="-Infinity" BorderPane.alignment="CENTER" />
@@ -53,10 +44,10 @@
           <items>
             <BorderPane prefHeight="200.0" prefWidth="200.0">
               <center>
-                <TextArea editable="false" prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER" />
+                <TextArea fx:id="messageArea" editable="false" disable="true" prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER" />
               </center>
             </BorderPane>
-            <TextArea layoutX="118.0" layoutY="188.0" prefHeight="200.0" prefWidth="200.0" />
+            <TextArea fx:id="typingArea" onKeyPressed="#handleKeyAction" disable="true" layoutX="118.0" layoutY="188.0" prefHeight="200.0" prefWidth="200.0" />
           </items>
         </SplitPane>
       </children>
