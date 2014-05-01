@@ -52,8 +52,8 @@ public class SimpleIdentity implements Identity
 	{
 		if(o==null)
 			return false;
-		Contact eq=(Contact)o;
-		return nickname.equals(eq.getNickname())&&figerprint.equals(eq.getFingerprint());
-		
+		Identity eq=(Identity)o;
+		boolean out=nickname.equals(eq.getNickname())&&figerprint.equals(eq.getFingerprint());
+		return out;
 	}
 }
