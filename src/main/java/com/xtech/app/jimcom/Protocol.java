@@ -27,6 +27,13 @@ public class Protocol
 	public static final String RESPONSE_HEAD="<response>";
 	public static final String RESPONSE_TAIL="</response>";
 	public static final String AUTH="<authRequest/>";
+	public static final String CONTENT_TAIL="</content>";
+	public static final String CONTENT_HEAD_BEGIN="<content=\"";
+	public static final String CONTENT_HEAD_END="\" />";
+	public static final String MESSAGE_HEAD=CONTENT_HEAD_BEGIN+"text_message"+CONTENT_HEAD_END;
+	public static final String MESSAGE_TAIL=CONTENT_TAIL;
+
+
 
 	public static String formatIdentity(Identity identity)
 	{
@@ -34,19 +41,18 @@ public class Protocol
 	}
 
 	public static String authRequest(Identity identity)
+	{	return TRANSMISSION_HEAD+"\n"+formatIdentity(identity)+AUTH+"\n"+TRANSMISSION_TAIL;}
+
+	public static String messageSend(Message msg)
 	{
-		return TRANSMISSION_HEAD+"\n"+formatIdentity(identity)+AUTH+"\n"+TRANSMISSION_TAIL;
+		return TRANSMISSION_HEAD+"\n"+MESSAGE_HEAD+"\n"+formatIdentity(msg.getIdentity())+msg.getRaw()+"\n"+MESSAGE_TAIL+"\n"+TRANSMISSION_TAIL;
 	}
 
 	public static String authResponseAccept(Identity identity)
-	{
-		return RESPONSE_HEAD+"\n"+SUCCESS+"\n"+formatIdentity(identity)+RESPONSE_TAIL;
-	}
+	{	return RESPONSE_HEAD+"\n"+SUCCESS+"\n"+formatIdentity(identity)+RESPONSE_TAIL;}
 
 	public static String authResponseReject()
-	{
-		return RESPONSE_HEAD+"\n"+FAIL+"\n"+RESPONSE_TAIL;
-	}
+	{	return RESPONSE_HEAD+"\n"+FAIL+"\n"+RESPONSE_TAIL;}
 
 	public static Identity parseIdentity(String line) throws ProtocolException
 	{
