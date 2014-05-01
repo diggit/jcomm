@@ -97,9 +97,12 @@ public class GuiFXController implements Initializable
 
             keyEvent.consume();
             System.out.println("ENTER PRESSED");
-
-            messageArea.appendText(typingArea.getText());
+            
+            String text=typingArea.getText();
+            //messageArea.appendText(typingArea.getText());
             typingArea.clear();
+            lastSelectedContact.sendMessage(text);
+
         }
     }
 
