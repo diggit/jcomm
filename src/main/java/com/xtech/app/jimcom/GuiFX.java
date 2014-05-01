@@ -58,6 +58,12 @@ public class GuiFX extends Application
     // {
     //     this.logger=logger;
     // }
+    private static List<String> args;//OK, when no more than one instance is created and setter is not static, its ok... I hope...
+    public void setArgs(List<String> args)
+    {
+        this.args=args;
+    }
+    
 
     public void show()
     {
@@ -94,7 +100,7 @@ public class GuiFX extends Application
         if(controller==null)
             throw new NullPointerException("refference to controller was null!");
 
-        roster=new Roster(controller);
+        roster=new Roster(controller,args);
         roster.start();
 
         
