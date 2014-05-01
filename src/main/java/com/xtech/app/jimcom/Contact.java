@@ -47,6 +47,7 @@ public class Contact extends Thread implements Identity
 	//handling connection
 	public void run()
 	{
+		String raw;
 
 		while(true)
 		{
@@ -56,10 +57,6 @@ public class Contact extends Thread implements Identity
 				{
 					targetState state=handshake();
 					shout("HANDSHAKE over");
-					try
-						{this.sck.setSoTimeout(0);}//reset timeout back to infinity
-					catch(SocketException ex)
-						{shout("unable to RESET socket SO timeout!");}
 
 
 					if(state==targetState.MATCH)
@@ -69,23 +66,38 @@ public class Contact extends Thread implements Identity
 					}
 					else
 					{
-						shout("due to unsuccessful connection attempt, closing socket...");
+						if (state==targetState.MISMATCH)
+						{
+							shout("ID mismatch, WHAT TO DO?!");
+
+							if(nickname.isEmpty()&&figerprint.isEmpty())
+							{
+								//TODO: (20) when new contact is created, accept even when mismatching (we dont know ID yet), ID is not set known
+								;
+							}
+							else
+							{
+								//TODO: (40) what to do in case of mismatch? some GUI?
+								;
+							}
+						} 
+
+						else if (state==targetState.REJECTED) 
+							shout("our connection attempt was REJECTED :( ");
+						else if (state==targetState.PROTOCOL_ERROR)
+							shout("encountered error during handshake, opponents port is probably occupied by some different process...");
+
+						else
+						{
+							shout("failed to create con OR verify oponent, unknown state!");
+						}
+
+						shout("closing socket NEWAY...");
+						
 						try
 							{sck.close();}
 						catch(IOException e)
 							{shout("closing failed, probably closed");}
-
-
-						//TODO: (40) what to do in case of mismatch? some GUI?
-						if (state==targetState.PROTOCOL_ERROR)
-						{
-							shout("encountered error during handshake, opponents port is probably occupied by some different process...");
-						}
-						else
-						{
-							shout("failed to create&verify oponent");
-						}
-
 
 					}
 
@@ -98,20 +110,61 @@ public class Contact extends Thread implements Identity
 					try
 						{this.sleep(10000);}
 					catch(InterruptedException ex)
-						{shout("forced to reconnect!");}		
+						{shout("forced to recheck connection!");}		
 				}
 			}
 			else //we are online (in case of success of connection attempt above, loop will be looped one more time to get here, but who cares...)
 			{
+				try
+				{
+					this.sck.setSoTimeout(0);
+					shout("socket timeout set back to infinity for patient waiting");
+				}//reset timeout back to infinity
+				catch(SocketException ex)
+					{shout("unable to RESET socket SO timeout!");}
 				
 				try
 				{
 					shout("waiting for message...");
-					//TODO: (20) handle incomming events/messages
-					shout("incomming message: "+in.readLine());
+					
+					while(true)//TODO: (30) when to stop listening for messages
+					{
+						//TODO: (20) handle incomming events/messages
+						raw=in.readLine();
+						if(raw==null)
+						{
+							shout("read NULL message");
+							if(sck.isConnected())
+							{
+								shout("but still connected...");
+							}
+							else
+								throw new IOException("connection lost!");
+						}
+						else
+						{
+							//shout("incomming message: "+raw);
+							if(raw.equals(Protocol.TRANSMISSION_HEAD))
+							{
+								shout("parsed TRANSMISSION_HEAD");
+								if(in.readLine().equals(Protocol.MESSAGE_HEAD))
+								{
+									Identity identity=Protocol.parseIdentity(in.readLine());
+									//TODO: (10) parse message text
+									//TODO: (20) process Message (print to messageView and respond) 
+								}
+
+							}
+						}
+						
+
+					}
+					
+					
 				}
 				catch(IOException ex)
 				{
+					shout("got an IOException:\n"+ex.getMessage());
 					online=false;
 					try
 						{sck.close();}
@@ -144,7 +197,7 @@ public class Contact extends Thread implements Identity
 		
 
 	//tell the other side who am I
-		String buf=Protocol.authRequest(this);
+		String buf=Protocol.authRequest(localID);
 		out.println(buf);
 		//out.flush();
 		shout("AUTH request sent...");
@@ -199,7 +252,7 @@ public class Contact extends Thread implements Identity
 			else if (rawIncomming.equals(Protocol.FAIL))
 			{
 				shout("authentification rejected!");
-				output=targetState.NOT_FOUND;
+				output=targetState.REJECTED;
 			}
 			else
 			{
@@ -287,7 +340,7 @@ public class Contact extends Thread implements Identity
 			catch (IOException e)
 			{
 				shout("connection failed, host is probably down...");
-				//shout(e);
+				shout(e.getMessage());
 				return false;
 			}
 		}
@@ -344,7 +397,7 @@ public class Contact extends Thread implements Identity
 		// shout("testing equality...");
 		if(o==null)
 			return false;
-		Contact eq=(Contact)o;
+		Identity eq=(Identity)o;
 		return this.nickname.equals(eq.getNickname())&&this.figerprint.equals(eq.getFingerprint());
 		
 	}
@@ -358,16 +411,26 @@ public class Contact extends Thread implements Identity
 		return hash;
 	}
 
-	private String read() throws IOException
-	{
-		//if(!online)
-		// throw new IOException("contact is not online, can't read input");
+	// private String read() throws IOException
+	// {
+	// 	//if(!online)
+	// 	// throw new IOException("contact is not online, can't read input");
 
 		
-		String message=in.readLine().trim();
-		shout("got incomming message: "+message);
-		return message;
+	// 	String message=in.readLine().trim();
+	// 	shout("got incomming message: "+message);
+	// 	return message;
 
+	// }
+	public void sendMessage(String messageText)
+	{
+		Message msg=new Message(messageText,this,Direction.OUTGOING);
+
+		String toSend=Protocol.messageSend(msg);
+		shout("dataframe to send:\n"+toSend);
+		out.println(toSend);//format and send message
+		out.flush();
+		shout("message sent");
 	}
 
 	private void shout(String text)
@@ -377,6 +440,6 @@ public class Contact extends Thread implements Identity
 	}
 
 	enum targetState
-	{MATCH,MISMATCH,NOT_FOUND,PROTOCOL_ERROR}
+	{MATCH,MISMATCH,NOT_FOUND,PROTOCOL_ERROR,REJECTED}
 }
 
