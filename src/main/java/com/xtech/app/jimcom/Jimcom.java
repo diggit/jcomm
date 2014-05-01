@@ -15,6 +15,7 @@
 
 package org.xtech.app.jimcom;
 
+import java.util.Arrays;
 import java.net.*;
 import java.io.*;
 import java.lang.Thread;
@@ -26,9 +27,12 @@ public class Jimcom
 	
 	public static void main(String args[])
 	{
+		assert false;
+		assert true;
 		//Logger logger=new Logger("jimcom.log");
 		
 		GuiFX mw=new GuiFX();
+		mw.setArgs(Arrays.asList(args));
 		
 		mw.show();
 
