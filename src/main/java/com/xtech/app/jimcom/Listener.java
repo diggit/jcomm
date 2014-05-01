@@ -24,12 +24,21 @@ public class Listener extends Thread
 {
 	private final Roster roster;
 	private final int port;
+	private final int backlog=5;//how many connections can wait in queue
+	private final InetAddress bindAddress;
 
 	public Listener(Roster roster,int port)
 	{
 		this.roster=roster;
 		this.port=port;
+		this.bindAddress=null;
+	}
 
+	public Listener(Roster roster,int port,InetAddress bindAddress)
+	{
+		this.roster=roster;
+		this.port=port;
+		this.bindAddress=bindAddress;
 	}
 
 	public void run()	
@@ -41,7 +50,18 @@ public class Listener extends Thread
 		{
 			try
 			{
-				server=new ServerSocket(this.port);
+				if(bindAddress!=null)
+				{
+					shout("setting listener at specific IP: "+bindAddress);
+					server=new ServerSocket(this.port,backlog,bindAddress);
+
+				}
+				else
+				{
+					shout("setting listener");						
+					server=new ServerSocket(this.port,backlog);
+				}
+				
 			}
 			catch(IOException ex)
 			{
@@ -58,6 +78,7 @@ public class Listener extends Thread
 				client=server.accept();
 				shout("got incomming con! processing...");
 				roster.serveIncommingConnection(client);//give new socket to Roster, which will identify other side and process request...
+				shout("processing done, back to listening...");
 			}
 
 			catch (IOException ex)
