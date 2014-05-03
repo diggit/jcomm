@@ -23,17 +23,16 @@ import java.util.Calendar;
 public class Message
 {
 	private final String msg;
-	private final Identity identity;
-	private final Direction direction;
+	private final Identity sender,target;
 
 	Calendar cal;
 	SimpleDateFormat sdf;
 
-	public Message(String text, Identity identity, Direction direction)
+	public Message(String text, Identity sender, Identity target)
 	{
 		this.msg=text;
-		this.identity=identity;
-		this.direction=direction;
+		this.sender=sender;
+		this.target=target;
 		this.cal = Calendar.getInstance();
 		this.sdf = new SimpleDateFormat("[HH:mm:ss]");
 	}
@@ -41,7 +40,7 @@ public class Message
 	@Override
 	public String toString()
 	{
-		return sdf.format(cal.getTime())+" "+identity.getNickname()+": "+msg;
+		return sdf.format(cal.getTime())+" <"+sender.getNickname()+"> "+msg;
 	}
 
 	public String getRaw()
@@ -49,20 +48,28 @@ public class Message
 		return msg;
 	}
 
-	public Identity getIdentity()
+	public Identity getSender()
 	{
-		return identity;
+		return sender;
 	}
 
-	public Direction getDirection()
+	public Identity getTarget()
 	{
-		return this.direction;
+		return target;
 	}
 
+	public boolean isSender(Identity id)
+	{
+		return sender.equals(id);
+	}
 
-	// public String getFormatedData()
-	// {
-	// 	return "<identity nickname="+identity.getNickname()+" fingerprint="+identity.getFingerprint()+" />\n"
-	// 			+"<content type=text_message>\n"+this.msg+"\n</content>\ngetNickname";
-	// }
+	public boolean isTarget(Identity id)
+	{
+		return target.equals(id);
+	}
+
+	public boolean isInvolved(Identity id)
+	{
+		return sender.equals(id) || target.equals(id);
+	}
 }
