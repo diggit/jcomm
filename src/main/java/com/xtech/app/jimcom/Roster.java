@@ -105,7 +105,7 @@ public class Roster extends Thread
 				shout("contact: "+c.getNickname());
 			}
 			shout("updated, sleeping...");
-			Platform.runLater(new Runnable(){public void run() {controller.updateContactListView(contactList);}});
+			updateAvailability();
 			try
 			{
 				this.sleep(30000);
@@ -152,17 +152,17 @@ public class Roster extends Thread
 		Contact c3;
 		if(args.contains("-Atest"))
 		{
-			c3=new Contact("Btest","somehothash",convertAddress(192, 168, 1, 139),5564,local);
+			c3=new Contact(this,"Btest","somehothash",convertAddress(192, 168, 1, 139),5564,local);
 		}
 		else if (args.contains("-Btest"))
 		{
-			c3=new Contact("Atest","somecoolhash",convertAddress(192, 168, 1, 128),5564,local);
+			c3=new Contact(this,"Atest","somecoolhash",convertAddress(192, 168, 1, 128),5564,local);
 		}
 
-		// c2=new Contact("FLOLED","none",convertAddress(127, 0, 0, 1}),5564,local);
+		// c2=new Contact(this,"FLOLED","none",convertAddress(127, 0, 0, 1}),5564,local);
 		// addContact(c2);
 		else
-			c3=new Contact("xorly","somehash",convertAddress(127, 0, 0, 1),5564,local);
+			c3=new Contact(this,"xorly","somehash",convertAddress(127, 0, 0, 1),5564,local);
 		addContact(c3);
 
 
@@ -181,7 +181,7 @@ public class Roster extends Thread
     		shout("adding contact...");
     		contactList.add(newContact);
 
-    		Platform.runLater(new Runnable(){public void run() {controller.updateContactListView(contactList);}});
+    		updateAvailability();
 			//OR
 			//JRE8 only
 			//Platform.runLater(() -> controller.updateContactListView(contactList));
@@ -202,6 +202,15 @@ public class Roster extends Thread
 	{
 		;
 	}
+
+	public void messageEvent(Contact id)
+	{
+		final Contact idCopy=id;
+
+		Platform.runLater(new Runnable(){public void run() {controller.handleMessageEvent(local, idCopy);}});
+		//just pipe this change to controller
+	}
+
 	public boolean	serveIncommingConnection(Socket incommingConnection)
 	{
 		shout("serving incomming connection...");
@@ -282,7 +291,7 @@ public class Roster extends Thread
 							{
 								shout("contact "+incommingIdentity+" not yet known");
 								//TODO: (20) do some decisions, accept or not? user interraction needed - GUI
-								this.addContact(new Contact(incommingIdentity,incommingConnection,local));
+								this.addContact(new Contact(this,incommingIdentity,incommingConnection,local));
 							}
 							updateAvailability();
 							return true;
