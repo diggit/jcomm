@@ -72,6 +72,7 @@ public class GuiFXController implements Initializable
 
     public synchronized void updateContactListView(List<Contact> contacts)
     {
+        System.out.println(("updating contact list..."));
         contactList.setItems(FXCollections.observableArrayList(contacts));
     }
 
@@ -125,10 +126,16 @@ public class GuiFXController implements Initializable
                     buffer+=msg+"\n";
             }
             messageArea.setText(buffer);
+        }
+    }
 
+    public synchronized void handleMessageEvent(Identity local,Contact msgId)
+    {
+        if(msgId.equals(lastSelectedContact))
+        {
+            //event came to selected contact
+            messageArea.appendText("\n"+msgId.getLastMessage().toString());
 
-
-            
         }
     }
 }
