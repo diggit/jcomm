@@ -32,6 +32,7 @@ public class Contact extends Thread implements Identity
 	
 	//message history
 	private volatile ArrayList<Message> messageHistory=new ArrayList<Message>();
+	private volatile Message lastMessage=null;
 	
 	//last seen, last ip,...
 
@@ -40,14 +41,38 @@ public class Contact extends Thread implements Identity
 	private volatile boolean online=false;
 	private volatile InetAddress ip;
 	private volatile int port;
+	private final Roster roster;
 
 	private BufferedReader in;//our incomming stream
 	private PrintWriter out;
+
+	Contact(Roster roster, String nick, String fp,InetAddress ip,int port, Identity localID)
+	{
+		this.roster=roster;
+		this.nickname=nick;
+		this.figerprint=fp;
+		this.ip=ip;
+		this.port=port;
+		this.localID=localID;
+	}
+
+	Contact(Roster roster, Identity id,Socket connection, Identity localID)
+	{
+		this.roster=roster;
+		this.nickname=id.getNickname();
+		this.figerprint=id.getFingerprint();
+		this.sck=connection;//already valid connection
+		this.ip=connection.getInetAddress();
+		this.port=connection.getPort();
+		this.localID=localID;
+		this.online=true;
+	}
 
 	//handling connection
 	public void run()
 	{
 		String raw;
+		String text;
 
 		while(true)
 		{
@@ -113,54 +138,84 @@ public class Contact extends Thread implements Identity
 						{shout("forced to recheck connection!");}		
 				}
 			}
-			else //we are online (in case of success of connection attempt above, loop will be looped one more time to get here, but who cares...)
+			else //if contact is online... (in case of success of connection attempt above, loop will be looped one more time to get here, but who cares...)
 			{
-				try
-				{
-					this.sck.setSoTimeout(0);
-					shout("socket timeout set back to infinity for patient waiting");
-				}//reset timeout back to infinity
-				catch(SocketException ex)
-					{shout("unable to RESET socket SO timeout!");}
 				
-				try
+
+				
+				
+				try //catching connection fail
 				{
 					shout("waiting for message...");
 					
 					while(true)//TODO: (30) when to stop listening for messages
 					{
-						//TODO: (20) handle incomming events/messages
+
+						setTimeout(0);//start to be patient in waiting for incomming message
+
 						raw=in.readLine();
 						if(raw==null)
 						{
 							shout("read NULL message");
 							if(sck.isConnected())
 							{
-								shout("but still connected...");
+								shout("but still looks connected...");
 							}
-							else
-								throw new IOException("connection lost!");
+
+							//else
+							throw new IOException("connection lost!");
 						}
 						else
 						{
-							//shout("incomming message: "+raw);
-							if(raw.equals(Protocol.TRANSMISSION_HEAD))
-							{
-								shout("parsed TRANSMISSION_HEAD");
-								if(in.readLine().equals(Protocol.MESSAGE_HEAD))
-								{
-									Identity identity=Protocol.parseIdentity(in.readLine());
-									//TODO: (10) parse message text
-									//TODO: (20) process Message (print to messageView and respond) 
-								}
+							//checking message structure for valid format
 
+							if(!raw.equals(Protocol.TRANSMISSION_HEAD))
+								throw new ProtocolException("missing tag TRANSMISSION_HEAD");
+							shout("parsed TRANSMISSION_HEAD");
+							
+							//when transmission starts, stop being so patient
+							//setTimeout(1000);
+
+							if(!(raw=in.readLine()).equals(Protocol.MESSAGE_HEAD))
+								throw new ProtocolException("missing tag MESSAGE_HEAD, got "+raw);
+							shout("parsed MESSAGE_HEAD");
+
+							Identity identity=Protocol.parseIdentity(in.readLine());
+							shout("got sender identity");
+
+							text="";//clear previous content
+							while(!(raw=in.readLine()).equals(Protocol.EOT))
+							{
+								//shout("parsing one line");
+								text=text.concat(raw);//append next line to message
 							}
+							//message and EOT read
+							shout("text of message read: "+text);
+
+							if(!(raw=in.readLine()).equals(Protocol.MESSAGE_TAIL))
+								throw new ProtocolException("missing tag MESSAGE_TAIL, got "+raw);
+							shout("message endtag OK");
+							
+							if(!(raw=in.readLine()).equals(Protocol.TRANSMISSION_TAIL))
+								throw new ProtocolException("missing tag TRANSMISSION_TAIL, got "+raw);
+							shout("transmission entag OK! transmission over");
+
+							addMessage(new Message(text,this,localID));
+
+							//TODO: (10) send message ACK
+									
+								
+							
 						}
 						
 
 					}
 					
 					
+				}
+				catch(ProtocolException ex)
+				{
+					shout("encountered ProtocolException during incomming message parsing!");
 				}
 				catch(IOException ex)
 				{
@@ -170,6 +225,7 @@ public class Contact extends Thread implements Identity
 						{sck.close();}
 					catch(IOException e)
 						{shout("closing failed, probably closed");}
+					roster.interrupt();
 				}
 
 			}
@@ -177,9 +233,45 @@ public class Contact extends Thread implements Identity
 
 		}
 	}
+
+
+	public void setConnection()
+	{
+		this.ip=ip;
+		this.port=port;
+	}
+
+	public String getNickname()
+	{
+		return nickname;
+	}
+	public String getFingerprint()
+	{
+		return figerprint;
+	}
+
+	public ArrayList<Message> getMessages()
+	{
+		return messageHistory;
+	}
+
+	public Message getLastMessage()
+	{
+		return lastMessage;
+	}
+
 	public boolean isOnline()
 	{
 		return online;
+	}
+
+	private void addMessage(Message msg) //we want save all listing through to fing last message
+	{
+		messageHistory.add(msg);
+		lastMessage=msg;
+		shout("message added");
+		roster.messageEvent(this);
+		shout("notifications send");
 	}
 
 	private targetState handshake()
@@ -286,48 +378,6 @@ public class Contact extends Thread implements Identity
 		}
 	}
 
-	
-	Contact(String nick, String fp,InetAddress ip,int port, Identity localID)
-	{
-		this.nickname=nick;
-		this.figerprint=fp;
-		this.ip=ip;
-		this.port=port;
-		this.localID=localID;
-	}
-
-	Contact(Identity id,Socket connection, Identity localID)
-	{
-		this.nickname=id.getNickname();
-		this.figerprint=id.getFingerprint();
-		this.sck=connection;//already valid connection
-		this.ip=connection.getInetAddress();
-		this.port=connection.getPort();
-		this.localID=localID;
-		this.online=true;
-	}
-
-
-	public void setConnection()
-	{
-		this.ip=ip;
-		this.port=port;
-	}
-
-	public String getNickname()
-	{
-		return nickname;
-	}
-	public String getFingerprint()
-	{
-		return figerprint;
-	}
-
-	public ArrayList<Message> getMessages()
-	{
-		return messageHistory;
-	}
-
 	public boolean connect()
 	{
 		shout("trying to connect");
@@ -424,19 +474,34 @@ public class Contact extends Thread implements Identity
 	// }
 	public void sendMessage(String messageText)
 	{
-		Message msg=new Message(messageText,this,Direction.OUTGOING);
-
-		String toSend=Protocol.messageSend(msg);
+		Message newOne=new Message(messageText,localID,this);
+		String toSend=Protocol.messageSend(newOne);
 		shout("dataframe to send:\n"+toSend);
 		out.println(toSend);//format and send message
 		out.flush();
 		shout("message sent");
+		//TODO: (10) check for ACK, resend otherwise
+		addMessage(newOne);
 	}
 
 	private void shout(String text)
 	{
-		//opt TODO@34: use logger
+		//opt TODO: (34) use logger
 		System.out.println("CONTACT ("+nickname+"): "+text);
+	}
+
+	private boolean setTimeout(int timeout)
+	{
+		try
+		{
+			this.sck.setSoTimeout(timeout);
+			return true;
+		}//for case of missing response
+		catch(SocketException ex)
+		{
+			shout("unable to set socket SO timeout! ("+timeout+")");
+			return false;
+		}
 	}
 
 	enum targetState
