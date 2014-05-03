@@ -44,10 +44,10 @@
           <items>
             <BorderPane prefHeight="200.0" prefWidth="200.0">
               <center>
-                <TextArea fx:id="messageArea" editable="false" disable="true" prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER" />
+                <TextArea fx:id="messageArea" editable="false" disable="true" wrapText="true" prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER" />
               </center>
             </BorderPane>
-            <TextArea fx:id="typingArea" onKeyPressed="#handleKeyAction" disable="true" layoutX="118.0" layoutY="188.0" prefHeight="200.0" prefWidth="200.0" />
+            <TextArea fx:id="typingArea" onKeyPressed="#handleKeyAction" disable="true" wrapText="true" layoutX="118.0" layoutY="188.0" prefHeight="200.0" prefWidth="200.0" />
           </items>
         </SplitPane>
       </children>
