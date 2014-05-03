@@ -22,6 +22,7 @@ public class Protocol
 {
 	public static final String SUCCESS="OK";
 	public static final String FAIL="FAILED";
+	public static final String EOT="\u0004"; //End Of Transmission character
 	public static final String TRANSMISSION_HEAD="<transmission>";
 	public static final String TRANSMISSION_TAIL="</transmission>";
 	public static final String RESPONSE_HEAD="<response>";
@@ -45,7 +46,7 @@ public class Protocol
 
 	public static String messageSend(Message msg)
 	{
-		return TRANSMISSION_HEAD+"\n"+MESSAGE_HEAD+"\n"+formatIdentity(msg.getIdentity())+msg.getRaw()+"\n"+MESSAGE_TAIL+"\n"+TRANSMISSION_TAIL;
+		return TRANSMISSION_HEAD+"\n"+MESSAGE_HEAD+"\n"+formatIdentity(msg.getSender())+msg.getRaw()+"\n"+EOT+"\n"+MESSAGE_TAIL+"\n"+TRANSMISSION_TAIL;
 	}
 
 	public static String authResponseAccept(Identity identity)
