@@ -35,6 +35,8 @@ public class Roster extends Thread
 	private volatile List<Contact> contactList;
 	private final List<String> args;
 
+	private Storage storage;
+
 	GuiFXController controller;
 	Roster(GuiFXController controller,List<String> args)
 	{
@@ -42,6 +44,7 @@ public class Roster extends Thread
 			throw new NullPointerException("refference to controller was null!");
 		this.controller=controller;
 		contactList=new ArrayList();
+		storage=new Storage(this,"storedData");
 		if(args.contains("-Atest"))
 		{
 			local=new SimpleIdentity("Atest","somecoolhash");
@@ -51,7 +54,7 @@ public class Roster extends Thread
 			local=new SimpleIdentity("Btest","somehothash");
 		}
 		else
-			local=new SimpleIdentity("xorly","somehash");
+			local=storage.getIdentity();
 		this.args=args;
 
 		shout("args...");
@@ -149,32 +152,36 @@ public class Roster extends Thread
 	}
 	public void loadStoredContacts()
 	{
+		shout("loaoding contacts");
 		Contact c3;
 		if(args.contains("-Atest"))
 		{
-			c3=new Contact(this,"Btest","somehothash",convertAddress(192, 168, 1, 139),5564,local);
+			addContact(new Contact(this,"Btest","somehothash",convertAddress(192, 168, 1, 139),5564,local));
 		}
 		else if (args.contains("-Btest"))
 		{
-			c3=new Contact(this,"Atest","somecoolhash",convertAddress(192, 168, 1, 128),5564,local);
+			addContact(new Contact(this,"Atest","somecoolhash",convertAddress(192, 168, 1, 128),5564,local));
 		}
-
-		// c2=new Contact(this,"FLOLED","none",convertAddress(127, 0, 0, 1}),5564,local);
-		// addContact(c2);
 		else
-			c3=new Contact(this,"xorly","somehash",convertAddress(127, 0, 0, 1),5564,local);
-		addContact(c3);
+		{
+			shout("reading from file...");
+			contactList=storage.getContacts();
+			for (Contact c : contactList )
+			{
+				shout("starting contact: "+c);
+				c.start();	
+			}
+			updateAvailability();
+		}
 
 
 		shout("all contacts loaded!");
-        
 	}
 
     synchronized void addContact(Contact newContact)
     {
     	shout("adding: "+newContact);
     	Contact item;
-    	boolean listed=false;
 
     	if(!contactList.contains(newContact))
     	{
@@ -182,9 +189,6 @@ public class Roster extends Thread
     		contactList.add(newContact);
 
     		updateAvailability();
-			//OR
-			//JRE8 only
-			//Platform.runLater(() -> controller.updateContactListView(contactList));
     		newContact.start();
     		shout("done");
     	}
