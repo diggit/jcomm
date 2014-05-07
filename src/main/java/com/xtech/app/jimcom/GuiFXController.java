@@ -77,6 +77,7 @@ public class GuiFXController implements Initializable
         System.out.println(("updating contact list..."));
         contactList.setItems(FXCollections.observableArrayList(contacts));
         resolveTypingAvailability();
+        //TODO: (40) what to do when something is already typed?
     }
 
     @FXML
@@ -140,7 +141,7 @@ public class GuiFXController implements Initializable
 
         if(selectedContact==null)
         {
-            System.out.println("NULL :(((");
+            System.out.println("no contact chosen, nothing to resolve");
             return;
         }
 
