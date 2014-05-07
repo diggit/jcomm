@@ -25,7 +25,7 @@ import javafx.scene.*;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent; 
+import javafx.scene.input.KeyEvent;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Button;
 import javafx.scene.control.ListView;
@@ -50,14 +50,16 @@ import org.xtech.app.jimcom.Status;
 public class GuiFXController implements Initializable
 {
 	@FXML protected ComboBox<Status> statusBox;
-    @FXML protected GridPane grid;
-    @FXML protected VBox topBox;
-    @FXML protected Stage primaryStage,stage;
-    @FXML protected Button hider;
-    @FXML protected ListView contactList;
+	@FXML protected GridPane grid;
+	@FXML protected VBox topBox;
+	@FXML protected Stage primaryStage,stage;
+	@FXML protected Button hider;
+	@FXML protected ListView contactList;
 	@FXML protected TextArea typingArea;
-    @FXML protected TextArea messageArea;
-    Contact lastSelectedContact;
+	@FXML protected TextArea messageArea;
+
+	Contact lastSelectedContact;
+
 
 	@Override
 	public void initialize(URL url, ResourceBundle rb)
@@ -74,11 +76,12 @@ public class GuiFXController implements Initializable
     {
         System.out.println(("updating contact list..."));
         contactList.setItems(FXCollections.observableArrayList(contacts));
+        resolveTypingAvailability();
     }
 
     @FXML
     private void clicked(MouseEvent event) {
-        System.out.println("CLICKED: You clicked me!");       
+        System.out.println("CLICKED: You clicked me!");
     }
 
     @FXML
@@ -98,7 +101,7 @@ public class GuiFXController implements Initializable
 
             keyEvent.consume();
             System.out.println("ENTER PRESSED");
-            
+
             String text=typingArea.getText();
             //messageArea.appendText(typingArea.getText());
             typingArea.clear();
@@ -107,7 +110,7 @@ public class GuiFXController implements Initializable
         }
     }
 
-    
+
 
     @FXML
     private void handleContactSelection( MouseEvent event)
@@ -117,7 +120,6 @@ public class GuiFXController implements Initializable
         {
             System.out.println("contact selected: "+selectedContact);
             lastSelectedContact=selectedContact;
-            typingArea.setDisable(false);
             messageArea.setDisable(false);
 
             String buffer="";
@@ -126,7 +128,28 @@ public class GuiFXController implements Initializable
                     buffer+=msg+"\n";
             }
             messageArea.setText(buffer);
+
+            resolveTypingAvailability();
+
         }
+    }
+
+    private void resolveTypingAvailability()
+    {
+        Contact selectedContact=(Contact)contactList.getSelectionModel().getSelectedItem();
+
+        if(selectedContact==null)
+        {
+            System.out.println("NULL :(((");
+            return;
+        }
+
+        System.out.println("RESOLVING AVAILABILITY");
+
+        if(selectedContact.isOnline())
+            typingArea.setDisable(false);
+        else
+            typingArea.setDisable(true);
     }
 
     public synchronized void handleMessageEvent(Identity local,Contact msgId)
