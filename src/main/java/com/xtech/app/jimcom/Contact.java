@@ -202,7 +202,7 @@ public class Contact extends Thread implements Identity
 
 							addMessage(new Message(text,this,localID));
 
-							//TODO: (10) send message ACK
+							//TODO: (20) send message ACK
 									
 								
 							
@@ -226,6 +226,7 @@ public class Contact extends Thread implements Identity
 					catch(IOException e)
 						{shout("closing failed, probably closed");}
 					roster.interrupt();
+					//TODO: (10) disable writing text area, when contact is offline
 				}
 
 			}
@@ -480,13 +481,13 @@ public class Contact extends Thread implements Identity
 		out.println(toSend);//format and send message
 		out.flush();
 		shout("message sent");
-		//TODO: (10) check for ACK, resend otherwise
+		//TODO: (20) check for ACK, resend otherwise
 		addMessage(newOne);
 	}
 
 	private void shout(String text)
 	{
-		//opt TODO: (34) use logger
+		//opt TODO: (90) use logger
 		System.out.println("CONTACT ("+nickname+"): "+text);
 	}
 
