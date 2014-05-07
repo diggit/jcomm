@@ -226,7 +226,6 @@ public class Contact extends Thread implements Identity
 					catch(IOException e)
 						{shout("closing failed, probably closed");}
 					roster.interrupt();
-					//TODO: (10) disable writing text area, when contact is offline
 				}
 
 			}
