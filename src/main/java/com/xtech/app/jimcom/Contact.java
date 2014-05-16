@@ -17,7 +17,7 @@ package org.xtech.app.jimcom;
 
 import org.xtech.app.jimcom.Message;
 
-import java.util.ArrayList;
+import java.util.*;
 import java.net.*;
 import java.io.*;
 import java.lang.Thread;
@@ -31,20 +31,23 @@ public class Contact extends Thread implements Identity
 	private String figerprint;
 	
 	//message history
-	private volatile ArrayList<Message> messageHistory=new ArrayList<Message>();
+	private volatile List<Message> messageHistory=new ArrayList<Message>();
 	private volatile Message lastMessage=null;
 	
 	//last seen, last ip,...
 
 	//session only
 	private volatile Socket sck; //socket to this contact
-	private volatile boolean online=false;
+	private volatile boolean connected=false;
+	private volatile Status connectionState=Status.Online;
 	private volatile InetAddress ip;
 	private volatile int port;
 	private final Roster roster;
 
 	private BufferedReader in;//our incomming stream
 	private PrintWriter out;
+	private volatile boolean running=true;
+
 
 	Contact(Roster roster, String nick, String fp,InetAddress ip,int port, Identity localID)
 	{
@@ -65,180 +68,234 @@ public class Contact extends Thread implements Identity
 		this.ip=connection.getInetAddress();
 		this.port=connection.getPort();
 		this.localID=localID;
-		this.online=true;
+		this.connected=true;
+	}
+
+	public void setMessageHistory(List<Message> list)
+	{
+		this.messageHistory=list;
+	}
+
+	public void setConnectionState(Status connectionState)
+	{
+		if(connectionState==this.connectionState)
+		{
+			shout("contact is already: "+this.connectionState);
+			return;
+		}
+
+		this.connectionState=connectionState;
+		if(connectionState==Status.Offline)
+		{
+			if(connected)
+			{
+				disconnect();
+				connected=false;	
+			}
+		}
+		else if (connectionState==Status.Online)
+		{
+			shout("waking from offline mode");
+		}
+		this.interrupt();//wake from sleeping
+	}
+
+	public Status getConnectionState()
+	{
+		return this.connectionState;
 	}
 
 	//handling connection
-	public void run()
+	synchronized public void run()
 	{
 		String raw;
 		String text;
 
-		while(true)
+		while(running)
 		{
-			if(!online)
-			{	
-				if(connect())
-				{
-					targetState state=handshake();
-					shout("HANDSHAKE over");
+			if(connectionState==Status.Offline)
+			{
+				shout("contact offline, waiting for wake");
+				try
+					{this.wait();}
+				catch(InterruptedException ex)
+					{shout("woken from offline sleep");}	
+			}
+			else if (connectionState==Status.Online)
+			{
+				if(!connected)
+				{	
+					if(connect())//if connection established
+					{
+						targetState state=handshake();//initiate handshake
+						shout("HANDSHAKE over");
 
 
-					if(state==targetState.MATCH)
-					{
-						shout("target identity match!");
-						online=true;
-					}
-					else
-					{
-						if (state==targetState.MISMATCH)
+						if(state==targetState.MATCH)
 						{
-							shout("ID mismatch, WHAT TO DO?!");
-
-							if(nickname.isEmpty()&&figerprint.isEmpty())
+							shout("target identity match!");
+							connected=true;
+						}
+						else
+						{
+							if (state==targetState.MISMATCH)
 							{
-								//TODO: (20) when new contact is created, accept even when mismatching (we dont know ID yet), ID is not set known
-								;
+								shout("ID mismatch, WHAT TO DO?!");
+
+								if(nickname.isEmpty()&&figerprint.isEmpty())
+								{
+									//TODO: (20) when new contact is created, accept even when mismatching (we dont know ID yet), ID is not set known
+									;
+								}
+								else
+								{
+									//TODO: (40) what to do in case of mismatch? some GUI?
+									;
+								}
+							} 
+
+							else if (state==targetState.REJECTED) 
+								shout("our connection attempt was REJECTED :( ");
+							else if (state==targetState.PROTOCOL_ERROR)
+								shout("encountered error during handshake, opponents port is probably occupied by some different process...");
+
+							else
+							{
+								shout("failed to create con OR verify oponent, unknown state!");
+							}
+
+							shout("closing socket NEWAY...");
+							
+							try
+								{sck.close();}
+							catch(IOException e)
+								{shout("closing failed, probably closed");}
+
+						}
+					}
+
+					if(!connected)//when connection was not succ. opened, wait and hold on a moment...
+					{
+						try
+							{this.sleep(10000);}
+						catch(InterruptedException ex)
+							{shout("woken from sleep, processing...");}		
+					}
+				}
+
+
+				else //if contact is connected... (in case of success of connection attempt above, loop will be looped one more time to get here, but who cares...)
+				{
+					try //catching connection fail
+					{
+						shout("waiting for message...");
+						
+						while(true)//TODO: (30) when to stop listening for messages
+						{
+							setTimeout(0);//start to be patient in waiting for incomming message
+
+							raw=in.readLine();
+							if(raw==null)
+							{
+								shout("read NULL message");
+								if(sck.isConnected())
+								{
+									shout("but still looks connected...");
+								}
+
+								//else
+								throw new IOException("connection lost!");
 							}
 							else
 							{
-								//TODO: (40) what to do in case of mismatch? some GUI?
-								;
+								//checking message structure for valid format
+
+								if(!raw.equals(Protocol.TRANSMISSION_HEAD))
+									throw new ProtocolException("missing tag TRANSMISSION_HEAD");
+								shout("parsed TRANSMISSION_HEAD");
+								
+								//when transmission starts, stop being so patient
+								//setTimeout(1000);
+
+								if(!(raw=in.readLine()).equals(Protocol.MESSAGE_HEAD))
+									throw new ProtocolException("missing tag MESSAGE_HEAD, got "+raw);
+								shout("parsed MESSAGE_HEAD");
+
+								Identity identity=Protocol.parseIdentity(in.readLine());
+								shout("got sender identity");
+
+								text="";//clear previous content
+								while(!(raw=in.readLine()).equals(Protocol.EOT))
+								{
+									//shout("parsing one line");
+									text=text.concat(raw);//append next line to message
+								}
+								//message and EOT read
+								shout("text of message read: "+text);
+
+								if(!(raw=in.readLine()).equals(Protocol.MESSAGE_TAIL))
+									throw new ProtocolException("missing tag MESSAGE_TAIL, got "+raw);
+								shout("message endtag OK");
+								
+								if(!(raw=in.readLine()).equals(Protocol.TRANSMISSION_TAIL))
+									throw new ProtocolException("missing tag TRANSMISSION_TAIL, got "+raw);
+								shout("transmission entag OK! transmission over");
+
+								addMessage(new Message(text,this,localID));
+
+								//TODO: (20) send message ACK
+										
+									
+								
 							}
-						} 
+							
 
-						else if (state==targetState.REJECTED) 
-							shout("our connection attempt was REJECTED :( ");
-						else if (state==targetState.PROTOCOL_ERROR)
-							shout("encountered error during handshake, opponents port is probably occupied by some different process...");
-
-						else
-						{
-							shout("failed to create con OR verify oponent, unknown state!");
 						}
-
-						shout("closing socket NEWAY...");
 						
+						
+					}
+					catch(ProtocolException ex)
+					{
+						shout("encountered ProtocolException during incomming message parsing!");
+					}
+					catch(IOException ex)
+					{
+						shout("got an IOException:\n"+ex.getMessage());
+						connected=false;
 						try
 							{sck.close();}
 						catch(IOException e)
 							{shout("closing failed, probably closed");}
-
+						roster.interrupt();
 					}
 
-					
-
 				}
-
-				if(!online)//when connection was not succ. opened, wait and retry...
-				{
-					try
-						{this.sleep(10000);}
-					catch(InterruptedException ex)
-						{shout("forced to recheck connection!");}		
-				}
-			}
-			else //if contact is online... (in case of success of connection attempt above, loop will be looped one more time to get here, but who cares...)
-			{
-				
-
-				
-				
-				try //catching connection fail
-				{
-					shout("waiting for message...");
-					
-					while(true)//TODO: (30) when to stop listening for messages
-					{
-
-						setTimeout(0);//start to be patient in waiting for incomming message
-
-						raw=in.readLine();
-						if(raw==null)
-						{
-							shout("read NULL message");
-							if(sck.isConnected())
-							{
-								shout("but still looks connected...");
-							}
-
-							//else
-							throw new IOException("connection lost!");
-						}
-						else
-						{
-							//checking message structure for valid format
-
-							if(!raw.equals(Protocol.TRANSMISSION_HEAD))
-								throw new ProtocolException("missing tag TRANSMISSION_HEAD");
-							shout("parsed TRANSMISSION_HEAD");
-							
-							//when transmission starts, stop being so patient
-							//setTimeout(1000);
-
-							if(!(raw=in.readLine()).equals(Protocol.MESSAGE_HEAD))
-								throw new ProtocolException("missing tag MESSAGE_HEAD, got "+raw);
-							shout("parsed MESSAGE_HEAD");
-
-							Identity identity=Protocol.parseIdentity(in.readLine());
-							shout("got sender identity");
-
-							text="";//clear previous content
-							while(!(raw=in.readLine()).equals(Protocol.EOT))
-							{
-								//shout("parsing one line");
-								text=text.concat(raw);//append next line to message
-							}
-							//message and EOT read
-							shout("text of message read: "+text);
-
-							if(!(raw=in.readLine()).equals(Protocol.MESSAGE_TAIL))
-								throw new ProtocolException("missing tag MESSAGE_TAIL, got "+raw);
-							shout("message endtag OK");
-							
-							if(!(raw=in.readLine()).equals(Protocol.TRANSMISSION_TAIL))
-								throw new ProtocolException("missing tag TRANSMISSION_TAIL, got "+raw);
-							shout("transmission entag OK! transmission over");
-
-							addMessage(new Message(text,this,localID));
-
-							//TODO: (20) send message ACK
-									
-								
-							
-						}
-						
-
-					}
-					
-					
-				}
-				catch(ProtocolException ex)
-				{
-					shout("encountered ProtocolException during incomming message parsing!");
-				}
-				catch(IOException ex)
-				{
-					shout("got an IOException:\n"+ex.getMessage());
-					online=false;
-					try
-						{sck.close();}
-					catch(IOException e)
-						{shout("closing failed, probably closed");}
-					roster.interrupt();
-				}
-
-			}
+			}//status conditions
+		}//main loop
+		shout("terminated!");
+	}//run method
 
 
-		}
+	// public void setConnection()
+	// {
+	// 	this.ip=ip;
+	// 	this.port=port;
+	// }
+	public void exit()
+	{
+		disconnect();
+		this.running=false;
+		this.interrupt();
 	}
 
-
-	public void setConnection()
+	public int getPort()
 	{
-		this.ip=ip;
-		this.port=port;
+		return this.port;
+	}
+
+	public String getIp()
+	{
+		return this.ip.getHostAddress();
 	}
 
 	public String getNickname()
@@ -250,7 +307,7 @@ public class Contact extends Thread implements Identity
 		return figerprint;
 	}
 
-	public ArrayList<Message> getMessages()
+	public List<Message> getMessages()
 	{
 		return messageHistory;
 	}
@@ -260,9 +317,9 @@ public class Contact extends Thread implements Identity
 		return lastMessage;
 	}
 
-	public boolean isOnline()
+	public boolean isConnected()
 	{
-		return online;
+		return connected;
 	}
 
 	private void addMessage(Message msg) //we want save all listing through to fing last message
@@ -378,6 +435,16 @@ public class Contact extends Thread implements Identity
 		}
 	}
 
+	public void disconnect()
+	{
+		if(connectionState==Status.Online)
+			if(connected)
+				try
+					{sck.close();}
+				catch(IOException e)
+					{shout("closing failed, probably closed");}
+	}
+
 	public boolean connect()
 	{
 		shout("trying to connect");
@@ -426,7 +493,7 @@ public class Contact extends Thread implements Identity
 		this.ip=sck.getInetAddress();
 		this.port=sck.getPort();
 		this.connect();//attach reader and writer
-		this.online=true;
+		this.connected=true;
 		this.interrupt();//proceed immediate connection
 	}
 
@@ -435,7 +502,7 @@ public class Contact extends Thread implements Identity
 	@Override
 	public String toString()
 	{
-		if(online)
+		if(connected)
 			return nickname+"("+ip.getHostAddress()+")";
 		else
 			return nickname+"(off)";
@@ -463,8 +530,8 @@ public class Contact extends Thread implements Identity
 
 	// private String read() throws IOException
 	// {
-	// 	//if(!online)
-	// 	// throw new IOException("contact is not online, can't read input");
+	// 	//if(!connected)
+	// 	// throw new IOException("contact is not connected, can't read input");
 
 		
 	// 	String message=in.readLine().trim();
