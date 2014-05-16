@@ -13,9 +13,8 @@
       <menus>
         <Menu mnemonicParsing="false" text="General">
           <items>
-            <MenuItem mnemonicParsing="false" text="Add contact" />
-            <SeparatorMenuItem mnemonicParsing="false" />
-            <MenuItem mnemonicParsing="false" text="Quit" />
+            <MenuItem fx:id="menuQuitItem" mnemonicParsing="false" onAction="#handleQuitAction" text="Quit" />
+            <MenuItem fx:id="menuSetLocalIdentityItem" mnemonicParsing="false" onAction="#handleSetLocalIdentity" text="Set my ID" />
           </items>
         </Menu>
       </menus>
@@ -31,23 +30,23 @@
       <children>
         <BorderPane layoutX="-86.0" layoutY="172.5" prefHeight="200.0" prefWidth="200.0">
           <center>
-            <ListView fx:id="contactList" onMouseClicked="#handleContactSelection" maxWidth="1.7976931348623157E308" minWidth="-Infinity" prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER" />
+            <ListView fx:id="contactList" maxWidth="1.7976931348623157E308" minWidth="-Infinity" onMouseClicked="#handleContactSelection" prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER" />
           </center>
           <bottom>
-            <ComboBox fx:id="statusBox" centerShape="false" depthTest="DISABLE" maxWidth="1.7976931348623157E308" minWidth="-Infinity" BorderPane.alignment="CENTER" />
+            <ComboBox fx:id="statusBox" centerShape="false" depthTest="DISABLE" maxWidth="1.7976931348623157E308" minWidth="-Infinity" onAction="#handleStatuchChosen" BorderPane.alignment="CENTER" />
           </bottom>
           <top>
-            <Button fx:id="hider" layoutX="6.2275390625" layoutY="-5.5" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#handleButtonAction" onMouseClicked="#clicked" text="HIDE" BorderPane.alignment="CENTER" />
+            <Button fx:id="hider" layoutX="6.2275390625" layoutY="-5.5" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#handleButtonAction" text="HIDE" BorderPane.alignment="CENTER" />
           </top>
         </BorderPane>
         <SplitPane dividerPositions="0.7832422586520947" focusTraversable="true" layoutX="14.0" layoutY="153.0" orientation="VERTICAL" prefHeight="200.0" prefWidth="160.0" GridPane.columnIndex="1">
           <items>
             <BorderPane prefHeight="200.0" prefWidth="200.0">
               <center>
-                <TextArea fx:id="messageArea" editable="false" disable="true" wrapText="true" prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER" />
+                <TextArea fx:id="messageArea" disable="true" editable="false" prefHeight="200.0" prefWidth="200.0" wrapText="true" BorderPane.alignment="CENTER" />
               </center>
             </BorderPane>
-            <TextArea fx:id="typingArea" onKeyPressed="#handleKeyAction" disable="true" wrapText="true" layoutX="118.0" layoutY="188.0" prefHeight="200.0" prefWidth="200.0" />
+            <TextArea fx:id="typingArea" disable="true" layoutX="118.0" layoutY="188.0" onKeyPressed="#handleKeyAction" prefHeight="200.0" prefWidth="200.0" wrapText="true" />
           </items>
         </SplitPane>
       </children>
