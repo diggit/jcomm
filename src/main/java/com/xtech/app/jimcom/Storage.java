@@ -20,6 +20,7 @@ import java.util.*;
 import java.io.*;
 import java.net.*;
 import java.text.ParseException;
+import java.time.Instant;
 
 public class Storage
 {
@@ -35,6 +36,12 @@ public class Storage
 
 	private static String CONTACTSTART="CONTACT_START";
 	private static String CONTACTEND="CONTACT_END";
+
+	private static String MESSAGE_LIST_START="MESSAGE_LIST_START";
+	private static String MESSAGE_LIST_END="MESSAGE_LIST_END";
+
+	private static String MESSAGE_START="MESSAGE_START";
+	private static String MESSAGE_END="MESSAGE_END";
 
 	private Identity loadedIdentity=null;
 	private List <Contact> loadedContacts=null;
@@ -73,7 +80,7 @@ public class Storage
 		Scanner sc;
 		try
 		{
-			sc = new Scanner(new FileInputStream(fileName), "UTF8");
+			sc = new Scanner(new FileInputStream(this.fileName), "UTF8");
 		}
 		catch(FileNotFoundException ex)
 		{
@@ -81,6 +88,7 @@ public class Storage
 			shout(ex.getMessage());
 			return;
 		}
+		shout("file opened");
 
 
 		try
@@ -106,6 +114,8 @@ public class Storage
 			return ;
 		}
 
+		sc.close();
+
 		
 	}
 
@@ -113,6 +123,12 @@ public class Storage
 	{
 		shout("running contacts parser");
 		String raw;
+		String bound;
+		String msg_buff;
+		ArrayList<Message> messages;
+		Contact lastOne;
+		Direction messageDirection;
+		long messageTimeStamp;
 
 		//buffers for parsing contact info
 		String fp,nickname;
@@ -125,7 +141,6 @@ public class Storage
 		parseTag(sc,CONTACTLISTSTART);
 		while(!(raw=sc.nextLine()).equals(CONTACTLISTEND))
 		{
-			//TODO: (10) do real loading of messages from file
 			shout("parsing contact");
 			parseTag(raw,CONTACTSTART);
 			nickname=sc.nextLine();
@@ -147,9 +162,90 @@ public class Storage
 				shout("cannot parse IP");
 				throw new ParseException("cannot parse IP from string: "+raw,0);
 			}
+			lastOne=new Contact(roster,nickname,fp,ip,port,this.loadedIdentity);
+			contacts.add(lastOne);
+
+
+
+			//parse messages
+			messages=new ArrayList<Message>();
+			parseTag(sc,MESSAGE_LIST_START);
+			raw=sc.nextLine();
+			if (!raw.equals(MESSAGE_LIST_END))//if not empty message list
+			{	
+				bound=raw;
+				shout("found unique bound: "+bound);
+
+				//TODO: (20) whan exception occurs during message parsing, throw away that messgae only and continue parsing
+
+				while(!(raw=sc.nextLine()).equals(MESSAGE_LIST_END))
+				{
+
+					try
+					{
+						parseTag(raw,MESSAGE_START);
+						messageDirection=Direction.fromString(sc.nextLine());//direction
+						try
+						{
+							raw=sc.nextLine();
+							messageTimeStamp=Long.parseLong(raw);
+						}
+						catch(Exception e)
+						{
+							shout("cannot parse message time");
+							throw new ParseException("cannot parse time from: "+raw,0);
+						}
+						
+						msg_buff=new String();
+						msg_buff="";
+						while(!(raw=sc.nextLine()).equals(bound))
+						{
+							shout("concating to message: "+raw);
+							if(!msg_buff.isEmpty())
+								msg_buff+="\n";
+							msg_buff+=raw;
+						}
+						shout("parsed complete message:"+msg_buff);
+
+						if (messageDirection==Direction.IN)
+						{
+							messages.add(new Message(msg_buff,lastOne,this.loadedIdentity,messageTimeStamp));	
+						}
+						else if (messageDirection==Direction.OUT)
+						{
+							messages.add(new Message(msg_buff,this.loadedIdentity,lastOne,messageTimeStamp));
+						}
+						else
+						{
+							shout("ERROR, unknown message direction!");
+						}
+						raw=sc.nextLine();
+					}
+					catch(ParseException pex)
+					{
+						shout("message parsing failed: "+pex.getMessage());
+						shout("skipping to next");
+						while(!(raw=sc.nextLine()).equals(MESSAGE_END));
+					}
+					parseTag(raw,MESSAGE_END);
+				}
+				parseTag(raw,MESSAGE_LIST_END);
+				if(!messages.isEmpty())
+				{
+					lastOne.setMessageHistory(messages);
+					for (Message m : messages)
+					{
+						shout(m.toString());	
+					}
+					shout("messages assigned to contact!");
+				}
+				
+			}
 			parseTag(sc,CONTACTEND);
-			contacts.add(new Contact(roster,nickname,fp,ip,port,this.loadedIdentity));
+			
 		}
+		parseTag(raw,CONTACTLISTEND);
+		shout("contacts loaded!");
 
 		return contacts;
 	}
@@ -188,23 +284,118 @@ public class Storage
 		parseTag(sc.nextLine(),tag);
 	}
 
-	public void store()
+
+	public void store(List<Contact> contactList)
 	{
 
+		BufferedWriter out;
 		try
 		{
-			Writer out = new BufferedWriter(new OutputStreamWriter(
-			new FileOutputStream("storedData"), "UTF8"));
-			out.write("test%n");
-			out.close();
+			out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(this.fileName), "UTF8"));
+			// out.close();
 		}
 		catch (UnsupportedEncodingException e)
 		{
 			shout("wrong encoding of file!");
+			shout(e.getMessage());
+			return;
 		}
 		catch (IOException e)
 		{
 			shout("encoutered IOException while writing file!");
+			shout(e.getMessage());
+			return;
+		}
+
+		Identity local=roster.getIdentity();
+	
+		try
+		{
+			List<Message> messageList;
+			String bound;
+
+			//identity
+			storeLn(out,IDSTART);
+			storeLn(out,local.getNickname());
+			storeLn(out,local.getFingerprint());
+			storeLn(out,IDEND);
+			//contacts
+			storeLn(out,CONTACTLISTSTART);
+			bound=""+Instant.now().toEpochMilli();
+			for(Contact c:contactList)
+			{
+				storeLn(out,CONTACTSTART);
+				storeLn(out,c.getNickname());
+				storeLn(out,c.getFingerprint());
+				storeLn(out,Integer.toString(c.getPort()));
+				storeLn(out,c.getIp());
+
+				storeLn(out,MESSAGE_LIST_START);
+				messageList=c.getMessages();
+				if(!messageList.isEmpty())
+				{
+					storeLn(out,bound);
+					for (Message m:messageList ){
+						storeLn(out,MESSAGE_START);
+						if(local.equals(m.getTarget()))
+							storeLn(out,Direction.IN.toString());
+						else
+							storeLn(out,Direction.OUT.toString());	
+						storeLn(out,""+m.getStampInMillis());
+						storeLn(out,m.getRaw());
+						storeLn(out,bound);
+						storeLn(out,MESSAGE_END);
+
+					}
+				}
+				
+				storeLn(out,MESSAGE_LIST_END);
+
+				storeLn(out,CONTACTEND);
+			}
+			storeLn(out,CONTACTLISTEND);
+			out.close();
+
+		}
+		catch(IOException e)
+		{
+			shout("write of file failed!");
+			shout(e.getMessage());
+		}
+	}
+
+	private void storeLn(BufferedWriter out,String line) throws IOException
+	{
+		out.write(line);
+		out.newLine();
+	}
+
+	enum Direction
+	{
+		IN("IN"),OUT("OUT"),UNKNOWN("UNKNOWN");
+
+		private Direction(final String text) {
+	        this.text = text;
+	    }
+
+	    private final String text;
+
+	    @Override
+	    public String toString() {
+	        return text;
+	    }
+
+	    public static Direction fromString(String text)
+	    {
+			if (text != null)
+			{
+				for (Direction b : Direction.values())
+				{
+					if (text.equalsIgnoreCase(b.text))
+					{return b;}
+				}
+			}
+			return Direction.UNKNOWN;
 		}
 	}
 
