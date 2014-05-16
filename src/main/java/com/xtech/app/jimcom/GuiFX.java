@@ -101,6 +101,7 @@ public class GuiFX extends Application
             throw new NullPointerException("refference to controller was null!");
 
         roster=new Roster(controller,args);
+        controller.setRoster(roster);
         roster.start();
 
         
