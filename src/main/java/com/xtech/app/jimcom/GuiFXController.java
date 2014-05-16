@@ -16,6 +16,7 @@
 package org.xtech.app.jimcom;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.fxml.JavaFXBuilderFactory;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.FXML;
@@ -60,6 +61,15 @@ public class GuiFXController implements Initializable
 
 	Contact lastSelectedContact;
 
+    private Status status;
+
+    private Roster roster;
+
+    public void setRoster(Roster roster)
+    {
+        this.roster=roster;
+    }
+
 
 	@Override
 	public void initialize(URL url, ResourceBundle rb)
@@ -67,30 +77,64 @@ public class GuiFXController implements Initializable
 		statusBox.getItems().addAll(
 			Status.Online,
 			Status.Offline);
-		statusBox.getSelectionModel().select(Status.Offline);
+		statusBox.getSelectionModel().select(Status.Online);
+        status=Status.Online;
 		//statusBox.setSelectedIndex(0);
         lastSelectedContact=null;
 	}
 
+    @FXML
+    public void handleQuitAction(ActionEvent event)
+    {
+        shout("oh, you wanna quit?");
+        shout("ok, then...");
+        roster.exit();
+        try
+        {roster.join();}
+        catch(InterruptedException ex)
+        {
+            shout("unable to join roster thread!");
+        }
+        shout("roster terminated");
+
+        Platform.exit();//teminates GUI
+    }
+
+    @FXML
+    public void handleSetLocalIdentity(ActionEvent event)
+    {
+        //TODO: (10) open local identity window and commit changes
+        Stage stage = new Stage();
+        stage.setScene(new Scene(new Group(new Text(10,10, "my second window"))));
+        stage.show();
+    }
+
+    @FXML
+    public void handleAddContact(ActionEvent event)
+    {
+        //TODO: (10) open new contact window (only address)
+        ;
+    }
+
     public synchronized void updateContactListView(List<Contact> contacts)
     {
-        System.out.println(("updating contact list..."));
+        shout(("updating contact list..."));
         contactList.setItems(FXCollections.observableArrayList(contacts));
         resolveTypingAvailability();
         //TODO: (40) what to do when something is already typed?
     }
 
     @FXML
-    private void clicked(MouseEvent event) {
-        System.out.println("CLICKED: You clicked me!");
-    }
-
-    @FXML
     private void handleButtonAction(ActionEvent event) {
-        System.out.println("You clicked me!");
-        Stage stage = new Stage();
-        stage.setScene(new Scene(new Group(new Text(10,10, "my second window"))));
-        stage.show();
+        shout("You clicked me!");
+        if(lastSelectedContact!=null)
+        {
+            if(lastSelectedContact.getConnectionState()==Status.Online)
+                lastSelectedContact.setConnectionState(Status.Offline);
+            else
+                lastSelectedContact.setConnectionState(Status.Online);
+        }
+       
     }
 
     @FXML
@@ -101,13 +145,23 @@ public class GuiFXController implements Initializable
             //     == KeyEvent.KEY_PRESSED);
 
             keyEvent.consume();
-            System.out.println("ENTER PRESSED");
+            shout("ENTER PRESSED");
 
             String text=typingArea.getText();
             //messageArea.appendText(typingArea.getText());
             typingArea.clear();
             lastSelectedContact.sendMessage(text);
 
+        }
+    }
+
+    @FXML
+    private void handleStatuchChosen(ActionEvent event)
+    {
+        if(statusBox.getValue()!=status)
+        {
+            status=statusBox.getValue();
+            shout("status changed to: "+status);
         }
     }
 
@@ -119,7 +173,7 @@ public class GuiFXController implements Initializable
         Contact selectedContact=(Contact)contactList.getSelectionModel().getSelectedItem();
         if(selectedContact!=lastSelectedContact)//proceed if chosen contact was changed only
         {
-            System.out.println("contact selected: "+selectedContact);
+            shout("contact selected: "+selectedContact);
             lastSelectedContact=selectedContact;
             messageArea.setDisable(false);
 
@@ -141,13 +195,13 @@ public class GuiFXController implements Initializable
 
         if(selectedContact==null)
         {
-            System.out.println("no contact chosen, nothing to resolve");
+            shout("no contact chosen, nothing to resolve");
             return;
         }
 
-        System.out.println("RESOLVING AVAILABILITY");
+        shout("RESOLVING AVAILABILITY");
 
-        if(selectedContact.isOnline())
+        if(selectedContact.isConnected())
             typingArea.setDisable(false);
         else
             typingArea.setDisable(true);
@@ -161,5 +215,11 @@ public class GuiFXController implements Initializable
             messageArea.appendText("\n"+msgId.getLastMessage().toString());
 
         }
+    }
+
+    private static void shout(String text)
+    {
+        //opt TODO: (90) use logger
+        System.out.println("FXCONTROLLER: "+text);
     }
 }
