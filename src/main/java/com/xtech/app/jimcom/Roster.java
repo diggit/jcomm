@@ -35,6 +35,8 @@ public class Roster extends Thread
 	private volatile List<Contact> contactList;
 	private final List<String> args;
 
+	private volatile boolean running=true;
+
 	private Storage storage;
 
 	GuiFXController controller;
@@ -68,13 +70,16 @@ public class Roster extends Thread
 		return args;
 	}
 
+	public Identity getIdentity()
+	{
+		return local;
+	}
+
 
 	public void run()
 	{
 		shout("started!");
 		loadStoredContacts();
-
-		shout("testing...");
 
 		Listener listener;
 		if(args.contains("-Atest"))
@@ -92,14 +97,44 @@ public class Roster extends Thread
         
 		else
         	listener=new Listener(this,5564);
-        listener.start();//start listener to receive incomming connections
 
-        serve();
+        listener.start();//start listener to receive incomming connections, forking
+
+        serve();//blocking until exit() called
+
+
+        storeAll();
+        shout("terminating all connections first!");
+        listener.exit();
+        if(!contactList.isEmpty())
+        {
+			for (Contact c : contactList)//quickly stop them
+			{
+				shout("stopping: "+c);
+				c.exit();
+			}	
+
+			for (Contact c : contactList)//then wait for their death!
+			{
+				try
+				{c.join();}
+				catch(InterruptedException ex)
+				{
+					shout("unable to join roster thread!");
+				}
+			}
+        }
+        try
+		{listener.join();}
+		catch(InterruptedException ex)
+		{shout("unable to join listener thread!");}
+
+		shout("terminated!");
 	}
 
 	private void serve()
 	{
-		while(true)
+		while(this.running)
 		{
 			shout("updating contact list...");
 			//TODO: (40) do something useful during refresh
@@ -120,6 +155,16 @@ public class Roster extends Thread
 		}
 	}
 
+	public void exit()
+	{
+		this.running=false;
+		this.interrupt();
+	}
+
+	public List<Contact> getContactList()
+	{
+		return contactList;
+	}
 	
 	public static InetAddress convertAddress(int a,int b,int c,int d)
 	{
@@ -176,6 +221,11 @@ public class Roster extends Thread
 
 
 		shout("all contacts loaded!");
+	}
+
+	public void storeAll()
+	{
+		storage.store(contactList);
 	}
 
     synchronized void addContact(Contact newContact)
@@ -280,7 +330,7 @@ public class Roster extends Thread
 							{
 								shout("contact "+incommingIdentity+" exists in database...");
 								out.println(Protocol.authResponseAccept(local));
-								if(contactList.get(index).isOnline())
+								if(contactList.get(index).isConnected())
 									shout("contact already online!");
 								else
 								{
@@ -322,39 +372,3 @@ public class Roster extends Thread
 	}
 	
 }
-
-//  class Reader extends Thread
-// {
-// 	private Socket sck;
-// 	private BufferedReader in=null;//our incomming stream
-// 	private Roster roster;//instance of roster, which to report incomming events
-// 	private boolean running;
-// 	private final int retries=3;
-
-// 	public void run()
-// 	{
-// 		for(int retry=0;retry<retries && in==null;retry++)
-// 		{
-// 			try
-// 			{
-// 				in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-// 			}
-// 			catch (IOException ex)
-// 			{
-// 				System.out.println("unable to open stream for reading, retriing...");
-// 			}
-// 		}
-// 		if(in==null)
-// 		{	
-// 			System.out.println(retries+" of reconnection failed, giving up!");
-// 			return;
-// 		}
-// 		System.out.println("got input stream");
-// 	}
-
-// 	public Reader(Socket socket, Roster roster)
-// 	{
-// 		this.sck=socket;
-// 		this.roster=roster;
-// 	}
-// 	//PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
