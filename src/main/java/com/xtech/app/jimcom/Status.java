@@ -17,5 +17,5 @@ package org.xtech.app.jimcom;
 
 public enum Status
 {
-	Online,Offline,Away,Unknown,Error
+	Online,Offline,Unknown,Error
 }
