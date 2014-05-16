@@ -18,29 +18,56 @@ package org.xtech.app.jimcom;
 import org.xtech.app.jimcom.*;
 
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
+import java.util.*;
 
 public class Message
 {
 	private final String msg;
 	private final Identity sender,target;
+	private final String timeStamp;
+	private final String dateStamp;
 
-	Calendar cal;
-	SimpleDateFormat sdf;
+	private final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
+	private final SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy");
+
+	private final long stampInMillis;
 
 	public Message(String text, Identity sender, Identity target)
 	{
 		this.msg=text;
 		this.sender=sender;
 		this.target=target;
-		this.cal = Calendar.getInstance();
-		this.sdf = new SimpleDateFormat("[HH:mm:ss]");
+
+		Calendar cal = Calendar.getInstance();
+		this.stampInMillis=cal.getTimeInMillis();
+		Date date=new Date(this.stampInMillis);
+		this.timeStamp=timeFormat.format(date);
+		this.dateStamp=dateFormat.format(date);
+	}
+
+	public Message(String text, Identity sender, Identity target, long millis )
+	{
+		this.msg=text;
+		this.sender=sender;
+		this.target=target;
+		this.stampInMillis=millis;
+		Date date=new Date(this.stampInMillis);
+		this.timeStamp=timeFormat.format(date);
+		this.dateStamp=dateFormat.format(date);
+	}
+
+	public long getStampInMillis()
+	{
+		return stampInMillis;
 	}
 
 	@Override
 	public String toString()
 	{
-		return sdf.format(cal.getTime())+" <"+sender.getNickname()+"> "+msg;
+		return "["+
+		this.timeStamp+"]"+
+		" <"+sender.getNickname()+
+		"> "+msg;
 	}
 
 	public String getRaw()
