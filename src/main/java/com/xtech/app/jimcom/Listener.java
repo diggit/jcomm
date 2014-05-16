@@ -26,6 +26,9 @@ public class Listener extends Thread
 	private final int port;
 	private final int backlog=5;//how many connections can wait in queue
 	private final InetAddress bindAddress;
+	private volatile boolean running=true;
+
+	private ServerSocket server=null;
 
 	public Listener(Roster roster,int port)
 	{
@@ -41,12 +44,24 @@ public class Listener extends Thread
 		this.bindAddress=bindAddress;
 	}
 
+	public void exit()
+	{
+		running=false;
+		try
+		{server.close();}
+		catch( IOException ex)
+		{
+			shout("unable to stop server listening");
+			shout(ex.getMessage());
+		}
+		
+	}
+
 	public void run()	
 	{
 		Socket client=null;
-		ServerSocket server=null;
 
-		while(server==null)
+		while(server==null && running)
 		{
 			try
 			{
@@ -61,18 +76,24 @@ public class Listener extends Thread
 					shout("setting listener");						
 					server=new ServerSocket(this.port,backlog);
 				}
-				
+				shout("socket opened, waiting for incomming cons...");
 			}
 			catch(IOException ex)
 			{
-				shout("cannot create server on this port!");
+				shout("cannot create server on this port, unable to serve incomming connections!");
 				shout(ex.getMessage());
+
+				try
+					{this.sleep(5000);}//sleep before next attemp
+				catch(InterruptedException wex)
+					{shout("woken from sleep, restrying to start server...");}
 			}
-			shout("socket opened, waiting for incomming cons...");
+			
 		}
 
-		while(true)//listen for incomming connections
+		while(running)//listen for incomming connections
 		{
+			//TODO: (20) do not listen when offline state set
 			try
 			{
 				client=server.accept();
@@ -89,6 +110,7 @@ public class Listener extends Thread
 
 				
 		}
+		shout("terminated!");
 	}
 
 	private void shout(String text)
