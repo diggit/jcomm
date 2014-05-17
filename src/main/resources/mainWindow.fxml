@@ -13,8 +13,9 @@
       <menus>
         <Menu mnemonicParsing="false" text="General">
           <items>
-            <MenuItem fx:id="menuQuitItem" mnemonicParsing="false" onAction="#handleQuitAction" text="Quit" />
+            <MenuItem fx:id="menuAddContactItem" mnemonicParsing="false" onAction="#handleAddContact" text="Add contact" />
             <MenuItem fx:id="menuSetLocalIdentityItem" mnemonicParsing="false" onAction="#handleSetLocalIdentity" text="Set my ID" />
+            <MenuItem fx:id="menuQuitItem" mnemonicParsing="false" onAction="#handleQuitAction" text="Quit" />
           </items>
         </Menu>
       </menus>
