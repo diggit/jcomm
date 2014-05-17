@@ -27,6 +27,7 @@ import java.net.URL;
 //javafx imports (oh jeez...)
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.fxml.JavaFXBuilderFactory;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.FXML;
@@ -72,17 +73,14 @@ public class GuiFX extends Application
 
     private GuiFXController controller;
 
-    //private ObservableList<Contact> contacts = FXCollections.observableArrayList();
 
     @Override
     public void start(Stage primaryStage) {
-        //logger.log("loading GUI contents...",Severity.INFO);
         
         URL style=getClass().getResource("../../../../mainWindow.fxml");
         VBox page=null;
 
         FXMLLoader fxmlLoader = new FXMLLoader();
-        // fxmlLoader.setLocation(getClass().getResource("../../../../mainWindow.fxml"));
         fxmlLoader.setBuilderFactory(new JavaFXBuilderFactory());
         
         
@@ -92,7 +90,6 @@ public class GuiFX extends Application
         }
         catch (IOException ioe)
         {
-            //logger.log("----UNABLE TO LOAD LAYOUT FILE----",Severity.ERR);
             ioe.printStackTrace();
         }
 
@@ -100,13 +97,31 @@ public class GuiFX extends Application
         if(controller==null)
             throw new NullPointerException("refference to controller was null!");
 
-        roster=new Roster(controller,args);
+
+
+        //load identity from file
+        Storage storage=new Storage("storedData");
+        Identity storedIdentity=storage.getIdentity();
+        
+        //compare it to login
+        LoginDialog login=new LoginDialog(storedIdentity);
+        Identity local=login.login(true);
+        login = null; //we dont need it anymore
+        if(local==null)
+        {
+            System.out.println("authetification failed, terminating!");
+            Platform.exit();
+            return;
+        }
+
+        roster=new Roster(controller,args,local);
         controller.setRoster(roster);
         roster.start();
 
         
 
         primaryStage.setTitle("JIMcom");
+        primaryStage.setOnCloseRequest(controller);
 
         Scene scene = new Scene(page);
         primaryStage.setScene(scene);
