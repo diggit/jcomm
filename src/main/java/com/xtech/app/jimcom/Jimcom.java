@@ -27,16 +27,13 @@ public class Jimcom
 	
 	public static void main(String args[])
 	{
-		assert false;
-		assert true;
-		//Logger logger=new Logger("jimcom.log");
 		
 		GuiFX mw=new GuiFX();
 		mw.setArgs(Arrays.asList(args));
 		
 		mw.show();
 
-		//logger.close();
+		System.out.println("JIMCOM: closed");
 
 		return;
 
