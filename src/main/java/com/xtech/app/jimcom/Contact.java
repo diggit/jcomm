@@ -49,17 +49,17 @@ public class Contact extends Thread implements Identity
 	private volatile boolean running=true;
 
 
-	Contact(Roster roster, String nick, String fp,InetAddress ip,int port, Identity localID)
+	Contact(Roster roster, String nick, String fp,InetAddress ip,int port)
 	{
 		this.roster=roster;
 		this.nickname=nick;
 		this.figerprint=fp;
 		this.ip=ip;
 		this.port=port;
-		this.localID=localID;
+		this.localID=roster.getIdentity();
 	}
 
-	Contact(Roster roster, Identity id,Socket connection, Identity localID)
+	Contact(Roster roster, Identity id,Socket connection)
 	{
 		this.roster=roster;
 		this.nickname=id.getNickname();
@@ -67,8 +67,15 @@ public class Contact extends Thread implements Identity
 		this.sck=connection;//already valid connection
 		this.ip=connection.getInetAddress();
 		this.port=connection.getPort();
-		this.localID=localID;
+		this.localID=roster.getIdentity();
 		this.connected=true;
+	}
+
+	public void setNewLocalID(Identity id)
+	{
+		//setConnectionState(Status.Offline);
+		this.localID=id;
+		//setConnectionState(Status.Online);
 	}
 
 	public void setMessageHistory(List<Message> list)
@@ -76,27 +83,30 @@ public class Contact extends Thread implements Identity
 		this.messageHistory=list;
 	}
 
-	public void setConnectionState(Status connectionState)
+	public void setConnectionState(Status newConnectionState)
 	{
-		if(connectionState==this.connectionState)
+		if(newConnectionState==this.connectionState)
 		{
 			shout("contact is already: "+this.connectionState);
 			return;
 		}
 
-		this.connectionState=connectionState;
-		if(connectionState==Status.Offline)
+		if(newConnectionState==Status.Offline)
 		{
 			if(connected)
 			{
 				disconnect();
 				connected=false;	
 			}
+			else
+				shout("stopping connection retries");
 		}
-		else if (connectionState==Status.Online)
+		else if (newConnectionState==Status.Online)
 		{
 			shout("waking from offline mode");
 		}
+		this.connectionState=newConnectionState;
+
 		this.interrupt();//wake from sleeping
 	}
 
@@ -190,7 +200,7 @@ public class Contact extends Thread implements Identity
 					{
 						shout("waiting for message...");
 						
-						while(true)//TODO: (30) when to stop listening for messages
+						while(true)//TODO: (40) verify working disconnect function when connected
 						{
 							setTimeout(0);//start to be patient in waiting for incomming message
 
@@ -209,13 +219,10 @@ public class Contact extends Thread implements Identity
 							else
 							{
 								//checking message structure for valid format
-
+								setTimeout(1000);
 								if(!raw.equals(Protocol.TRANSMISSION_HEAD))
 									throw new ProtocolException("missing tag TRANSMISSION_HEAD");
 								shout("parsed TRANSMISSION_HEAD");
-								
-								//when transmission starts, stop being so patient
-								//setTimeout(1000);
 
 								if(!(raw=in.readLine()).equals(Protocol.MESSAGE_HEAD))
 									throw new ProtocolException("missing tag MESSAGE_HEAD, got "+raw);
@@ -437,12 +444,16 @@ public class Contact extends Thread implements Identity
 
 	public void disconnect()
 	{
+		shout("disconnect requested");
 		if(connectionState==Status.Online)
 			if(connected)
+			{
+				shout("connection active, disconnecting");
 				try
 					{sck.close();}
 				catch(IOException e)
 					{shout("closing failed, probably closed");}
+			}
 	}
 
 	public boolean connect()
