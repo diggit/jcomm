@@ -40,7 +40,7 @@ public class Roster extends Thread
 	private Storage storage;
 
 	GuiFXController controller;
-	Roster(GuiFXController controller,List<String> args)
+	Roster(GuiFXController controller,List<String> args,Identity local)
 	{
 		if(controller==null)
 			throw new NullPointerException("refference to controller was null!");
@@ -49,14 +49,14 @@ public class Roster extends Thread
 		storage=new Storage(this,"storedData");
 		if(args.contains("-Atest"))
 		{
-			local=new SimpleIdentity("Atest","somecoolhash");
+			this.local=new SimpleIdentity("Atest","somecoolhash");
 		}
 		else if (args.contains("-Btest"))
 		{
-			local=new SimpleIdentity("Btest","somehothash");
+			this.local=new SimpleIdentity("Btest","somehothash");
 		}
 		else
-			local=storage.getIdentity();
+			this.local=local;
 		this.args=args;
 
 		shout("args...");
@@ -73,6 +73,36 @@ public class Roster extends Thread
 	public Identity getIdentity()
 	{
 		return local;
+	}
+
+	public void setLocalIdentity(Identity id)
+	{
+		if(id!=null)
+			if(local.equals(id))
+				shout("new identity is  same as now, ognoring");
+			else
+			{
+				shout("updating local identity");
+				this.local=id;
+
+				shout("informing contacts about change...");
+				//disconnect all at first
+
+				//TODO: (10) inform contacts about change instead of reconnecting
+				for(Contact c:contactList)
+				{
+					c.setConnectionState(Status.Offline);
+				}
+
+				//set new local ID and reconnect
+				for(Contact c:contactList)
+				{
+					c.setNewLocalID(local);
+					c.setConnectionState(Status.Online);
+				}
+
+				
+			}
 	}
 
 
@@ -94,20 +124,21 @@ public class Roster extends Thread
 			shout("setting up as node B");
 			listener=new Listener(this,5564,convertAddress(192, 168, 1, 139));
 		}
-        
+
 		else
-        	listener=new Listener(this,5564);
+			listener=new Listener(this,5564);
 
-        listener.start();//start listener to receive incomming connections, forking
+		listener.start();//start listener to receive incomming connections, forking
 
-        serve();//blocking until exit() called
+		serve();//blocking until exit() called
+		shout("serving stopped");
 
 
-        storeAll();
-        shout("terminating all connections first!");
-        listener.exit();
-        if(!contactList.isEmpty())
-        {
+		storeAll();
+		shout("terminating all connections first!");
+		listener.exit();
+		if(!contactList.isEmpty())
+		{
 			for (Contact c : contactList)//quickly stop them
 			{
 				shout("stopping: "+c);
@@ -123,8 +154,8 @@ public class Roster extends Thread
 					shout("unable to join roster thread!");
 				}
 			}
-        }
-        try
+		}
+		try
 		{listener.join();}
 		catch(InterruptedException ex)
 		{shout("unable to join listener thread!");}
@@ -201,16 +232,21 @@ public class Roster extends Thread
 		Contact c3;
 		if(args.contains("-Atest"))
 		{
-			addContact(new Contact(this,"Btest","somehothash",convertAddress(192, 168, 1, 139),5564,local));
+			addContact(new Contact(this,"Btest","somehothash",convertAddress(192, 168, 1, 139),5564));
 		}
 		else if (args.contains("-Btest"))
 		{
-			addContact(new Contact(this,"Atest","somecoolhash",convertAddress(192, 168, 1, 128),5564,local));
+			addContact(new Contact(this,"Atest","somecoolhash",convertAddress(192, 168, 1, 128),5564));
 		}
 		else
 		{
 			shout("reading from file...");
 			contactList=storage.getContacts();
+			if (contactList==null)
+			{
+				contactList=new ArrayList<Contact>();	
+			}
+
 			for (Contact c : contactList )
 			{
 				shout("starting contact: "+c);
@@ -228,29 +264,30 @@ public class Roster extends Thread
 		storage.store(contactList);
 	}
 
-    synchronized void addContact(Contact newContact)
-    {
-    	shout("adding: "+newContact);
-    	Contact item;
+	synchronized void addContact(Contact newContact)
+	{
+		shout("adding: "+newContact);
+		Contact item;
 
-    	if(!contactList.contains(newContact))
-    	{
-    		shout("adding contact...");
-    		contactList.add(newContact);
+		if(!contactList.contains(newContact))
+		{
+			shout("adding contact...");
+			contactList.add(newContact);
 
-    		updateAvailability();
-    		newContact.start();
-    		shout("done");
-    	}
-    	else
-    	{
-    		shout("this Contact is already listed");
-    	}
-    }
+			updateAvailability();
+			newContact.start();
+			shout("done");
+		}
+		else
+		{
+			shout("this Contact is already listed");
+		}
+	}
 
 	public void updateAvailability()
 	{
-		Platform.runLater(new Runnable(){public void run() {controller.updateContactListView(contactList);}});
+		if(!contactList.isEmpty())
+			Platform.runLater(new Runnable(){public void run() {controller.updateContactListView(contactList);}});
 	}
 	public void transmitStatusChange()
 	{
@@ -345,7 +382,7 @@ public class Roster extends Thread
 							{
 								shout("contact "+incommingIdentity+" not yet known");
 								//TODO: (20) do some decisions, accept or not? user interraction needed - GUI
-								this.addContact(new Contact(this,incommingIdentity,incommingConnection,local));
+								this.addContact(new Contact(this,incommingIdentity,incommingConnection));
 							}
 							updateAvailability();
 							return true;
