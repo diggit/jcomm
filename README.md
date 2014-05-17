@@ -2,28 +2,32 @@
 ========
 (Semestral project for PR2 on FEL@CVUT.)
 
-JIMcom is simple java Instant Messenger. It uses (will use) server-less topology (NAT restricted). All local settings will be stored in plaintext in file. 
+JIMcom is simple java Instant Messenger. It uses server-less topology (NAT restricted). All local settings will be stored in plaintext in file. 
 
 ### progress
 |objective|ststus|note|
 |---------|------|----|
-|schedule project|IP||
-|create main structure|OH||
-|network protocol|OH|test and define
-|GUI|OH||
-more comes soon..
+|schedule project|DONE||
+|create main structure|DONE||
+|user identification|DONE|nick & password hash paired|
+|network protocol|DONE|test and define|
+|storing/loading contacts and messages|DONE||
+|basic chat|DONE|verified - working|
+|base GUI|DONE||
+|add new contact GUI|IP||
+|local identification GUI|IP||
+|file transfers|OH|including hash for integrity checking|
+
 
 *OH - On Hold*
 *IP - In Progress*
 
 
-### features
+### additional features
+(most won't be implemented due to insufficient time)
 |feature|status|note|
 |----|---|---|
-|file transfers|planned|including hash for integrity checking|
-|user identification|planned|nick & password hash paired|
-|user info sharing|planned|authorization needed|
-|keyboard shortcuts|planned||
+|keyboard shortcuts|optional||
 |crypted messaging|optional||
 |image previewing|optional|if received file is image, offer preview in chat widow|
 |minimize to status panel|optional||
