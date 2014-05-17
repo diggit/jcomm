@@ -27,15 +27,14 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Button;
-import javafx.scene.control.ListView;
-import javafx.scene.control.TextArea;
+import javafx.scene.control.*;
 import javafx.stage.*;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.text.Text;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
+import javafx.geometry.*;
+import javafx.event.EventHandler;
 
 import javafx.collections.*;
 
@@ -44,11 +43,11 @@ import java.util.*;
 import java.net.URL;
 
 
-import org.xtech.app.jimcom.Status;
+import org.xtech.app.jimcom.*;
 
 
 
-public class GuiFXController implements Initializable
+public class GuiFXController implements Initializable, EventHandler<WindowEvent>
 {
 	@FXML protected ComboBox<Status> statusBox;
 	@FXML protected GridPane grid;
@@ -86,6 +85,18 @@ public class GuiFXController implements Initializable
     @FXML
     public void handleQuitAction(ActionEvent event)
     {
+        exit();
+    }
+
+
+    //handle window closing
+    @FXML
+    public void handle(WindowEvent ev) {
+        exit();
+    }
+
+    private void exit()
+    {
         shout("oh, you wanna quit?");
         shout("ok, then...");
         roster.exit();
@@ -103,17 +114,24 @@ public class GuiFXController implements Initializable
     @FXML
     public void handleSetLocalIdentity(ActionEvent event)
     {
-        //TODO: (10) open local identity window and commit changes
-        Stage stage = new Stage();
-        stage.setScene(new Scene(new Group(new Text(10,10, "my second window"))));
-        stage.show();
+        LoginDialog login=new LoginDialog(roster.getIdentity());
+        Identity newID=login.login(false);
+        if(newID!=null)
+            roster.setLocalIdentity(newID);
+        else
+            shout("newID was NULL!");
     }
 
     @FXML
     public void handleAddContact(ActionEvent event)
     {
         //TODO: (10) open new contact window (only address)
-        ;
+        NewContact newContactGUI=new NewContact();
+        Contact c=newContactGUI.get(roster);
+        if(c!=null)
+        {
+            roster.addContact(c);
+        }
     }
 
     public synchronized void updateContactListView(List<Contact> contacts)
