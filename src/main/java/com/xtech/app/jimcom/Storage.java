@@ -47,6 +47,13 @@ public class Storage
 	private List <Contact> loadedContacts=null;
 
 
+
+	public Storage(String fileName)
+	{
+		this.roster=null;
+		this.fileName=fileName;
+		shout("assigned file "+fileName);
+	}
 	public Storage(Roster roster,String fileName)
 	{
 		this.roster=roster;
@@ -65,12 +72,14 @@ public class Storage
 	{
 		this.load();
 
-		return loadedContacts;
+		if(loadedContacts!=null)
+			return loadedContacts;
+		else
+			return new ArrayList<Contact>();
 	}
 
 	public void load()
 	{
-
 		//TODO: (30) skip empty lines
 		if(loaded)
 			return;
@@ -94,16 +103,20 @@ public class Storage
 		try
 		{
 			this.loadedIdentity=loadIdentity(sc);
-			try
+
+			if(roster!=null)
 			{
-				this.loadedContacts=loadContacts(sc);
-			}
-			catch(ParseException exn)
-			{
-				shout("cannot parse Contacts");
-				shout(exn.getMessage());
-				this.loadedContacts=new ArrayList<Contact>(); //if parse error, return empty contactList
-				return;
+				try
+				{
+					this.loadedContacts=loadContacts(sc);
+				}
+				catch(ParseException exn)
+				{
+					shout("cannot parse Contacts");
+					shout(exn.getMessage());
+					this.loadedContacts=new ArrayList<Contact>(); //if parse error, return empty contactList
+					return;
+				}
 			}
 		}
 		catch(ParseException ex)
@@ -113,6 +126,7 @@ public class Storage
 			this.loadedIdentity=new SimpleIdentity("unknown","error");//if parse error, return default Identity
 			return ;
 		}
+		catch(NoSuchElementException ex){;}
 
 		sc.close();
 
@@ -162,7 +176,7 @@ public class Storage
 				shout("cannot parse IP");
 				throw new ParseException("cannot parse IP from string: "+raw,0);
 			}
-			lastOne=new Contact(roster,nickname,fp,ip,port,this.loadedIdentity);
+			lastOne=new Contact(roster,nickname,fp,ip,port);
 			contacts.add(lastOne);
 
 
@@ -175,8 +189,6 @@ public class Storage
 			{	
 				bound=raw;
 				shout("found unique bound: "+bound);
-
-				//TODO: (20) whan exception occurs during message parsing, throw away that messgae only and continue parsing
 
 				while(!(raw=sc.nextLine()).equals(MESSAGE_LIST_END))
 				{
@@ -225,7 +237,7 @@ public class Storage
 					{
 						shout("message parsing failed: "+pex.getMessage());
 						shout("skipping to next");
-						while(!(raw=sc.nextLine()).equals(MESSAGE_END));
+						while(!(raw=sc.nextLine()).equals(MESSAGE_END));//find nearest messageend and try to continue
 					}
 					parseTag(raw,MESSAGE_END);
 				}
@@ -287,6 +299,10 @@ public class Storage
 
 	public void store(List<Contact> contactList)
 	{
+		if (contactList==null) {
+			shout("contactList is NULL!");
+		}
+		shout("storing data");
 
 		BufferedWriter out;
 		try
@@ -362,6 +378,7 @@ public class Storage
 			shout("write of file failed!");
 			shout(e.getMessage());
 		}
+		shout("written and closed");
 	}
 
 	private void storeLn(BufferedWriter out,String line) throws IOException
