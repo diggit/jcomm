@@ -88,7 +88,7 @@ public class Roster extends Thread
 				shout("informing contacts about change...");
 				//disconnect all at first
 
-				//TODO: (10) inform contacts about change instead of reconnecting
+				//TODO: (20) inform contacts about change instead of reconnecting
 				for(Contact c:contactList)
 				{
 					c.setConnectionState(Status.Offline);
@@ -100,15 +100,13 @@ public class Roster extends Thread
 					c.setNewLocalID(local);
 					c.setConnectionState(Status.Online);
 				}
-
-				
 			}
 	}
-
 
 	public void run()
 	{
 		shout("started!");
+		shout("local identity: "+this.local);
 		loadStoredContacts();
 
 		Listener listener;
@@ -174,7 +172,7 @@ public class Roster extends Thread
 				shout("contact: "+c.getNickname());
 			}
 			shout("updated, sleeping...");
-			updateAvailability();
+			updateContactList();
 			try
 			{
 				this.sleep(30000);
@@ -252,7 +250,7 @@ public class Roster extends Thread
 				shout("starting contact: "+c);
 				c.start();	
 			}
-			updateAvailability();
+			updateContactList();
 		}
 
 
@@ -274,7 +272,7 @@ public class Roster extends Thread
 			shout("adding contact...");
 			contactList.add(newContact);
 
-			updateAvailability();
+			updateContactList();
 			newContact.start();
 			shout("done");
 		}
@@ -284,9 +282,27 @@ public class Roster extends Thread
 		}
 	}
 
-	public void updateAvailability()
+	synchronized void removeContact(Contact toRemove)
 	{
-		if(!contactList.isEmpty())
+		toRemove.exit();
+		shout("contact "+toRemove+"exited");
+		try
+		{
+			toRemove.join();//if something screws up, this will block GUI!
+			shout("contact "+toRemove+"thread terminated");
+		}
+		catch(InterruptedException ex)
+		{
+			shout("unable to join contact thread!");
+		}
+		contactList.remove(toRemove);
+		shout("contact: "+toRemove.toString()+" removed");
+		updateContactList();
+	}
+
+	public void updateContactList()
+	{
+		if(contactList!=null)
 			Platform.runLater(new Runnable(){public void run() {controller.updateContactListView(contactList);}});
 	}
 	public void transmitStatusChange()
@@ -384,7 +400,7 @@ public class Roster extends Thread
 								//TODO: (20) do some decisions, accept or not? user interraction needed - GUI
 								this.addContact(new Contact(this,incommingIdentity,incommingConnection));
 							}
-							updateAvailability();
+							updateContactList();
 							return true;
 						}
 						
