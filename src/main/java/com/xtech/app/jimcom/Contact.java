@@ -37,7 +37,7 @@ public class Contact extends Thread implements Identity
 	//last seen, last ip,...
 
 	//session only
-	private volatile Socket sck; //socket to this contact
+	private volatile Socket sck=new Socket(); //socket to this contact
 	private volatile boolean connected=false;
 	private volatile Status connectionState=Status.Online;
 	private volatile InetAddress ip;
@@ -93,13 +93,9 @@ public class Contact extends Thread implements Identity
 
 		if(newConnectionState==Status.Offline)
 		{
-			if(connected)
-			{
-				disconnect();
-				connected=false;	
-			}
-			else
-				shout("stopping connection retries");
+			shout("switching to offline");
+			disconnect();
+			shout("disconnected due to OFFLINE!");
 		}
 		else if (newConnectionState==Status.Online)
 		{
@@ -108,6 +104,7 @@ public class Contact extends Thread implements Identity
 		this.connectionState=newConnectionState;
 
 		this.interrupt();//wake from sleeping
+		shout("new connectionState set!");
 	}
 
 	public Status getConnectionState()
@@ -290,9 +287,10 @@ public class Contact extends Thread implements Identity
 	// }
 	public void exit()
 	{
-		disconnect();
 		this.running=false;
+		setConnectionState(Status.Offline);
 		this.interrupt();
+		shout("running interrupted");
 	}
 
 	public int getPort()
@@ -445,25 +443,39 @@ public class Contact extends Thread implements Identity
 	public void disconnect()
 	{
 		shout("disconnect requested");
-		if(connectionState==Status.Online)
-			if(connected)
-			{
-				shout("connection active, disconnecting");
+		if(this.connectionState==Status.Online)
+			// if(this.connected)
+			// {
+			//	shout("connection active, disconnecting");
 				try
-					{sck.close();}
+					{
+						shout("closing socket...");
+						if(this.sck!=null)
+							this.sck.close();
+						shout("socket closed!");
+					}
 				catch(IOException e)
 					{shout("closing failed, probably closed");}
-			}
+				this.connected=false;
+			// }
 	}
 
 	public boolean connect()
 	{
 		shout("trying to connect");
+		disconnect(); //close previous socket
 		if(sck==null || sck.isClosed())
 		{
 			try
 			{
+				shout("creating socket on IP: "+this.ip.getHostAddress()+":"+this.port);
+				if(sck==null)
+					shout("socket id now null");
+				else
+					shout("socket is now"+sck.toString());
+				//throw new IOException("DEBUG");
 				sck = new Socket(ip,port);
+				shout("socket opened");
 			}
 			catch (IOException e)
 			{
@@ -472,7 +484,7 @@ public class Contact extends Thread implements Identity
 				return false;
 			}
 		}
-
+	
 		try
 		{
 			in = new BufferedReader(new InputStreamReader(sck.getInputStream()));
