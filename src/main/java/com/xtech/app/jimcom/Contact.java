@@ -463,8 +463,8 @@ public class Contact extends Thread implements Identity
 	public boolean connect()
 	{
 		shout("trying to connect");
-		disconnect(); //close previous socket
-		if(sck==null || sck.isClosed())
+		//disconnect(); //close previous socket
+		if(sck==null || !sck.isConnected() || sck.isClosed() )
 		{
 			try
 			{
@@ -474,13 +474,17 @@ public class Contact extends Thread implements Identity
 				else
 					shout("socket is now"+sck.toString());
 				//throw new IOException("DEBUG");
-				sck = new Socket(ip,port);
+				sck=new Socket();
+				InetSocketAddress isa = new InetSocketAddress(ip,port);
+				shout("isa created");
+				sck.connect(isa,1000);
 				shout("socket opened");
+				shout("socket is now"+sck.toString());
 			}
 			catch (IOException e)
 			{
 				shout("connection failed, host is probably down...");
-				shout(e.getMessage());
+				shout("!ERR: "+e.getMessage());
 				return false;
 			}
 		}
@@ -564,6 +568,10 @@ public class Contact extends Thread implements Identity
 	// }
 	public void sendMessage(String messageText)
 	{
+		if (messageText==null) {
+			shout("null parameter received!");
+			return;
+		}
 		Message newOne=new Message(messageText,localID,this);
 		String toSend=Protocol.messageSend(newOne);
 		shout("dataframe to send:\n"+toSend);
