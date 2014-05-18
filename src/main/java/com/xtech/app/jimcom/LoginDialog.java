@@ -90,22 +90,34 @@ public class LoginDialog
         grid.add(signBtn, 1, 5);
         grid.add(newayBtn, 0, 5);
 
+		newayBtn.setOnAction(new EventHandler<ActionEvent>()
+		{
+			@Override
+			public void handle(ActionEvent e)
+			{
+				if(userTextField.getText().isEmpty() ||pwBox.getText().isEmpty())
+				{
+					info.setText("username and password must be filled!");
+					return;
+				}
+				setReadIdentity(new SimpleIdentity(userTextField.getText(),Utils.stringHash(pwBox.getText())));
+				dialog.close();
+
+			}
+		});
+
         signBtn.setOnAction(new EventHandler<ActionEvent>()
         {
 			@Override
 			public void handle(ActionEvent e)
 			{
-				//actiontarget.setFill(Color.RED);//do not set text color without setting background!
-				//actiontarget.setText("Sign in button pressed");
-
-				//TODO: (10) hash password
 				if(userTextField.getText().isEmpty() ||pwBox.getText().isEmpty())
 				{
 					info.setText("username and password must be filled!");
 					return;
 				}
 
-				Identity grabbed=new SimpleIdentity(userTextField.getText(),pwBox.getText());
+				Identity grabbed=new SimpleIdentity(userTextField.getText(),Utils.stringHash(pwBox.getText()));
 
 				if(localID!=null)
 					if(grabbed.equals(localID) || !verificationNeeded)
