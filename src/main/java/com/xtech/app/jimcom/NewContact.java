@@ -124,8 +124,8 @@ public class NewContact
 						info.setText("ivalid address format");
 						return;
 					}
-					setNewContact(new Contact(roster,"unknown","unknown",ip,port));
-					//TODO: (10) create every added contant somehow unique, to add more waiting contacts into list
+					setNewContact(new Contact(roster,"unknown",Utils.stringHash(""+Calendar.getInstance().getTimeInMillis()),ip,port));
+					//TODO: (10) create every new contant somehow unique, to add more waiting contacts into list
 					dialog.close();
 					
 				}
