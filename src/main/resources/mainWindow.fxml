@@ -13,9 +13,15 @@
       <menus>
         <Menu mnemonicParsing="false" text="General">
           <items>
-            <MenuItem fx:id="menuAddContactItem" mnemonicParsing="false" onAction="#handleAddContact" text="Add contact" />
-            <MenuItem fx:id="menuSetLocalIdentityItem" mnemonicParsing="false" onAction="#handleSetLocalIdentity" text="Set my ID" />
-            <MenuItem fx:id="menuQuitItem" mnemonicParsing="false" onAction="#handleQuitAction" text="Quit" />
+            <MenuItem fx:id="menuAddContact" mnemonicParsing="false" onAction="#handleAddContact" text="Add contact" />
+            <MenuItem fx:id="menuSetLocalIdentity" mnemonicParsing="false" onAction="#handleSetLocalIdentity" text="Set my ID" />
+            <MenuItem fx:id="menuQuit" mnemonicParsing="false" onAction="#handleQuitAction" text="Quit" />
+          </items>
+        </Menu>
+        <Menu disable="true" mnemonicParsing="false" text="Contact" fx:id="menuContact">
+          <items>
+            <MenuItem fx:id="menuDeleteContact" mnemonicParsing="false" onAction="#handleDeleteContact" text="Delete" />
+            <MenuItem fx:id="menuModifyContact" mnemonicParsing="false" onAction="#handleModifyContact" text="Modify connection" />
           </items>
         </Menu>
       </menus>
@@ -36,15 +42,12 @@
           <bottom>
             <ComboBox fx:id="statusBox" centerShape="false" depthTest="DISABLE" maxWidth="1.7976931348623157E308" minWidth="-Infinity" onAction="#handleStatuchChosen" BorderPane.alignment="CENTER" />
           </bottom>
-          <top>
-            <Button fx:id="hider" layoutX="6.2275390625" layoutY="-5.5" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#handleButtonAction" text="HIDE" BorderPane.alignment="CENTER" />
-          </top>
         </BorderPane>
         <SplitPane dividerPositions="0.7832422586520947" focusTraversable="true" layoutX="14.0" layoutY="153.0" orientation="VERTICAL" prefHeight="200.0" prefWidth="160.0" GridPane.columnIndex="1">
           <items>
             <BorderPane prefHeight="200.0" prefWidth="200.0">
               <center>
-                <TextArea fx:id="messageArea" disable="true" editable="false" prefHeight="200.0" prefWidth="200.0" wrapText="true" BorderPane.alignment="CENTER" />
+                <TextArea fx:id="messageArea" disable="true" editable="false" prefHeight="200.0" prefWidth="200.0" wrapText="true" />
               </center>
             </BorderPane>
             <TextArea fx:id="typingArea" disable="true" layoutX="118.0" layoutY="188.0" onKeyPressed="#handleKeyAction" prefHeight="200.0" prefWidth="200.0" wrapText="true" />
