@@ -57,6 +57,7 @@ public class GuiFXController implements Initializable, EventHandler<WindowEvent>
 	@FXML protected ListView contactList;
 	@FXML protected TextArea typingArea;
 	@FXML protected TextArea messageArea;
+    @FXML protected Menu menuContact;
 
 	Contact lastSelectedContact;
 
@@ -125,7 +126,6 @@ public class GuiFXController implements Initializable, EventHandler<WindowEvent>
     @FXML
     public void handleAddContact(ActionEvent event)
     {
-        //TODO: (10) open new contact window (only address)
         NewContact newContactGUI=new NewContact();
         Contact c=newContactGUI.get(roster);
         if(c!=null)
@@ -133,6 +133,24 @@ public class GuiFXController implements Initializable, EventHandler<WindowEvent>
             roster.addContact(c);
         }
     }
+
+    @FXML
+    public void handleDeleteContact(ActionEvent event)
+    {
+        menuContact.setDisable(false);
+        messageArea.setDisable(false);
+        menuContact.setDisable(false);
+        messageArea.clear();
+        typingArea.clear();
+        roster.removeContact(lastSelectedContact);
+    }
+
+    @FXML
+    public void handleModifyContact(ActionEvent event)
+    {
+        ;
+    }
+
 
     public synchronized void updateContactListView(List<Contact> contacts)
     {
@@ -194,6 +212,7 @@ public class GuiFXController implements Initializable, EventHandler<WindowEvent>
             shout("contact selected: "+selectedContact);
             lastSelectedContact=selectedContact;
             messageArea.setDisable(false);
+            menuContact.setDisable(false);
 
             String buffer="";
             for (Message msg : selectedContact.getMessages())
