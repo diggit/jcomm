@@ -373,6 +373,8 @@ public class Roster extends Thread
 						if (local.equals(incommingIdentity))
 						{
 							shout("this is WEIRD, LOOPBACK?");
+							// shout("local:\t"+local);
+							// shout("incomming:\t"+incommingIdentity);
 							out.println(Protocol.authResponseReject());
 							return false;
 						}
@@ -388,7 +390,6 @@ public class Roster extends Thread
 								else
 								{
 									shout("binding socket and bringing online!");
-									//shout("WARNING: binding disabled!");
 									contactList.get(index).bindSocket(incommingConnection);	
 								}
 
