@@ -120,7 +120,7 @@ public class GuiFX extends Application
 
         
 
-        primaryStage.setTitle("JIMcom");
+        primaryStage.setTitle("JIMcom ("+local.getNickname()+")");
         primaryStage.setOnCloseRequest(controller);
 
         Scene scene = new Scene(page);
