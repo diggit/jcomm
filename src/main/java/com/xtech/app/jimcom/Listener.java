@@ -53,6 +53,11 @@ public class Listener extends Thread
 		
 	}
 
+	public int getPort()
+	{
+		return this.port;
+	}
+
 	synchronized  public void run()	
 	{
 		Socket client=null;
@@ -121,7 +126,6 @@ public class Listener extends Thread
 
 	private void shout(String text)
 	{
-		//opt TODO: (90) use logger
 		System.out.println("LISTENER: "+text);
 	}
 
