@@ -48,6 +48,15 @@ import org.xtech.app.jimcom.*;
 public class NewContact
 {
 	Contact newID;
+    Contact preset;
+    public NewContact()
+    {
+        this.preset=null;
+    }
+    public NewContact(Contact preset)
+    {
+        this.preset=preset;
+    }
 
 	private void setNewContact(Contact id)
 	{
@@ -73,7 +82,7 @@ public class NewContact
         final Button cancelBtn = new Button("Cancel");
 
         portField.setText("5564");
-        //TODO: (10) get server port from roster instead of hardcoding
+        //TODO: (20) get server port from roster instead of hardcoding
         
         grid.add(scenetitle, 0, 0, 2, 1);
         grid.add(address, 0, 1);
@@ -83,6 +92,12 @@ public class NewContact
         grid.add(info, 0, 4, 2, 1);
         grid.add(addBtn, 1, 5);
         grid.add(cancelBtn, 0, 5);
+
+        if (preset!=null)//if preset exist, fill it
+        {
+            addressField.setText(preset.getIpString());
+            portField.setText(""+preset.getPort());
+        }
 
         cancelBtn.setOnAction(new EventHandler<ActionEvent>()
         {
@@ -128,7 +143,6 @@ public class NewContact
 						return;
 					}
 					setNewContact(new Contact(roster,"?unknown?",Utils.stringHash(""+Calendar.getInstance().getTimeInMillis()),ip,port));
-					//TODO: (10) create every new contant somehow unique, to add more waiting contacts into list
 					dialog.close();
 					
 				}
