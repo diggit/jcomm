@@ -61,65 +61,19 @@ public class Contact extends Thread implements Identity
 		this.localID=roster.getIdentity();
 	}
 
-	Contact(Roster roster, Identity id,Socket connection)
+	Contact(Roster roster, Identity id,Socket connection,int originalPort)
 	{
 		this.roster=roster;
 		this.nickname=id.getNickname();
 		this.fingerprint=id.getFingerprint();
 		this.sck=connection;//already valid connection
 		this.ip=connection.getInetAddress();
-		this.port=connection.getPort();
+		//this.port=connection.getLocalPort();//this port is transfered one
+		this.port=originalPort;//this is out local port, we hope in default settings
+		shout("port se to: "+this.port);
 		this.localID=roster.getIdentity();
 		//this.connected=true;//we need to attachn streams
 		shout("new contact with opened connection created!");
-	}
-
-	public void setDisplayed(boolean nowDisplayed)
-	{
-		if (!this.isDisplayed && nowDisplayed )//was not and now is
-			unreadMessages=0;
-		this.isDisplayed=nowDisplayed;
-	}
-
-	public void setNewLocalID(Identity id)
-	{
-		//setState(Status.Offline);
-		this.localID=id;
-		//setState(Status.Online);
-	}
-
-	public void setMessageHistory(List<Message> list)
-	{
-		this.messageHistory=list;
-	}
-
-	public void setState(Status newConnectionState)
-	{
-		if(newConnectionState==this.connectionState)
-		{
-			shout("contact is already: "+this.connectionState);
-			return;
-		}
-
-		if(newConnectionState==Status.Offline)
-		{
-			shout("switching to offline");
-			disconnect();
-			shout("disconnected due to OFFLINE!");
-		}
-		else if (newConnectionState==Status.Online)
-		{
-			shout("waking from offline mode");
-		}
-		this.connectionState=newConnectionState;
-
-		this.interrupt();//wake from sleeping
-		shout("new connectionState set!");
-	}
-
-	public Status getConnectionState()
-	{
-		return this.connectionState;
 	}
 
 	//handling connection
@@ -207,7 +161,7 @@ public class Contact extends Thread implements Identity
 					{
 						shout("waiting for message...");
 						
-						while(this.running)//TODO: (40) verify working disconnect function when connected
+						while(this.running)
 						{
 							setTimeout(0);//start to be patient in waiting for incomming message
 
@@ -290,11 +244,6 @@ public class Contact extends Thread implements Identity
 	}//run method
 
 
-	// public void setConnection()
-	// {
-	// 	this.ip=ip;
-	// 	this.port=port;
-	// }
 	public void exit()
 	{
 		this.running=false;
@@ -302,14 +251,73 @@ public class Contact extends Thread implements Identity
 		this.interrupt();
 	}
 
+	public void setConnection(InetAddress newIp,int newPort )
+	{
+		this.ip=newIp;
+		this.port=newPort;
+	}
+
+		public void setDisplayed(boolean nowDisplayed)
+	{
+		if (!this.isDisplayed && nowDisplayed )//was not and now is
+			unreadMessages=0;
+		this.isDisplayed=nowDisplayed;
+	}
+
+	public void setNewLocalID(Identity id)
+	{
+		//setState(Status.Offline);
+		this.localID=id;
+		//setState(Status.Online);
+	}
+
+	public void setMessageHistory(List<Message> list)
+	{
+		this.messageHistory=list;
+	}
+
+	public void setState(Status newConnectionState)
+	{
+		if(newConnectionState==this.connectionState)
+		{
+			shout("contact is already: "+this.connectionState);
+			return;
+		}
+
+		if(newConnectionState==Status.Offline)
+		{
+			shout("switching to offline");
+			disconnect();
+			shout("disconnected due to OFFLINE!");
+		}
+		else if (newConnectionState==Status.Online)
+		{
+			shout("waking from offline mode");
+		}
+		this.connectionState=newConnectionState;
+
+		this.interrupt();//wake from sleeping
+		shout("new connectionState set!");
+	}
+
+	public Status getCurrentState()
+	{
+		return this.connectionState;
+	}
+
 	public int getPort()
 	{
 		return this.port;
 	}
 
-	public String getIp()
+	public String getIpString()
 	{
 		return this.ip.getHostAddress();
+	}
+
+	public InetAddress getIp()
+	{
+		return this.ip;
 	}
 
 	public String getNickname()
@@ -459,6 +467,7 @@ public class Contact extends Thread implements Identity
 		}
 	}
 
+	//stop running connections
 	public void disconnect()
 	{
 		shout("disconnect requested");
@@ -479,6 +488,7 @@ public class Contact extends Thread implements Identity
 			// }
 	}
 
+	//try to create connection
 	public boolean connect()
 	{
 		shout("trying to connect");
@@ -532,17 +542,20 @@ public class Contact extends Thread implements Identity
 		return true;
 	}
 
-	public void bindSocket(Socket incommmingSocket)
+	//attach opened socket to contact
+	public void bindSocket(Socket incommmingSocket,int originalPort)
 	{
 		shout("binding incomming socket to contact");
 		this.sck=incommmingSocket;
 		this.ip=sck.getInetAddress();
-		this.port=sck.getPort();
+		//this.port=sck.getPort();
+		this.port=originalPort;
 		this.connect();//attach reader and writer
 		this.connected=true;
 		this.interrupt();//proceed immediate connection
 	}
 
+	//send message to this contact
 	public void sendMessage(String messageText)
 	{
 		if (messageText==null) {
@@ -575,7 +588,6 @@ public class Contact extends Thread implements Identity
 
 	private void shout(String text)
 	{
-		//opt TODO: (90) use logger
 		System.out.println("CONTACT ("+nickname+"): "+text);
 	}
 
