@@ -29,6 +29,7 @@ public class Listener extends Thread
 	private volatile boolean running=true;
 
 	private ServerSocket server=null;
+	private Status serverState=Status.Online;
 
 	public Listener(Roster roster,int port)
 	{
@@ -47,69 +48,74 @@ public class Listener extends Thread
 	public void exit()
 	{
 		running=false;
-		try
-		{server.close();}
-		catch( IOException ex)
-		{
-			shout("unable to stop server listening");
-			shout(ex.getMessage());
-		}
+		setState(Status.Offline);
+		this.interrupt();
 		
 	}
 
-	public void run()	
+	synchronized  public void run()	
 	{
 		Socket client=null;
 
-		while(server==null && running)
+		while(this.running)
 		{
-			try
+			if(this.serverState==Status.Offline)
 			{
-				if(bindAddress!=null)
-				{
-					shout("setting listener at specific IP: "+bindAddress);
-					server=new ServerSocket(this.port,backlog,bindAddress);
-
-				}
-				else
-				{
-					shout("setting listener");						
-					server=new ServerSocket(this.port,backlog);
-				}
-				shout("socket opened, waiting for incomming cons...");
-			}
-			catch(IOException ex)
-			{
-				shout("cannot create server on this port, unable to serve incomming connections!");
-				shout(ex.getMessage());
-
+				shout("contact offline, waiting for wake");
 				try
-					{this.sleep(5000);}//sleep before next attemp
-				catch(InterruptedException wex)
-					{shout("woken from sleep, restrying to start server...");}
+					{this.wait();}
+				catch(InterruptedException ex)
+					{shout("woken from offline sleep");}	
 			}
-			
-		}
-
-		while(running)//listen for incomming connections
-		{
-			//TODO: (20) do not listen when offline state set
-			try
+			else if (this.serverState==Status.Online)
 			{
-				client=server.accept();
-				shout("got incomming con! processing...");
-				roster.serveIncommingConnection(client);//give new socket to Roster, which will identify other side and process request...
-				shout("processing done, back to listening...");
-			}
+				while(this.running && this.serverState==Status.Online && (server==null || server.isClosed()))
+				{
+					try
+					{
+						if(this.bindAddress!=null)
+						{
+							shout("setting listener at specific IP: "+bindAddress);
+							this.server=new ServerSocket(this.port,backlog,bindAddress);
 
-			catch (IOException ex)
-			{
-				shout("Accept failed on port: "+this.port);
-				shout(ex.getMessage());
-			}
+						}
+						else
+						{
+							shout("setting listener");						
+							this.server=new ServerSocket(this.port,backlog);
+						}
+						shout("socket opened, waiting for incomming cons...");
+					}
+					catch(IOException ex)
+					{
+						shout("cannot create server on this port, unable to serve incomming connections!");
+						shout(ex.getMessage());
 
-				
-		}
+						try
+							{this.sleep(5000);}//sleep before next attemp
+						catch(InterruptedException wex)
+							{shout("woken from sleep, retrying to start server...");}
+					}
+				}
+
+				while(this.running && this.serverState==Status.Online )//listen for incomming connections
+				{	
+					//TODO: (20) do not listen when offline state set
+					try
+					{
+						client=server.accept();
+						shout("got incomming con! processing...");
+						this.roster.serveIncommingConnection(client);//give new socket to Roster, which will identify other side and process request...
+						shout("processing done, back to listening...");
+					}
+					catch (IOException ex)
+					{
+						shout("Accept failed on port: "+this.port);
+						shout(ex.getMessage());
+					}
+				}//waiting for incomming
+			}//if Onlie
+		}//main cycle
 		shout("terminated!");
 	}
 
@@ -117,5 +123,33 @@ public class Listener extends Thread
 	{
 		//opt TODO: (90) use logger
 		System.out.println("LISTENER: "+text);
+	}
+
+	public void setState(Status newServerState)
+	{
+		if(newServerState==this.serverState)
+		{
+			shout("Server is already: "+this.serverState);
+			return;
+		}
+
+		this.serverState=newServerState;
+		if(newServerState==Status.Offline)
+		{
+			shout("switching to offline");
+			this.interrupt();//if waiting between create server retries
+			
+			if(server!=null)//if server is created (accept() running), stop it
+				try
+					{server.close();}
+				catch(IOException e)
+					{shout("server close failed");}
+		}
+		else if (newServerState==Status.Online)
+		{
+			shout("waking from offline mode");
+			this.interrupt();//wake from sleep
+		}
+		shout("new serverState set!");
 	}
 }
