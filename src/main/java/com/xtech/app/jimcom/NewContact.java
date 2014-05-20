@@ -71,6 +71,9 @@ public class NewContact
         final Text info = new Text("");
         final Button addBtn = new Button("Add");
         final Button cancelBtn = new Button("Cancel");
+
+        portField.setText("5564");
+        //TODO: (10) get server port from roster instead of hardcoding
         
         grid.add(scenetitle, 0, 0, 2, 1);
         grid.add(address, 0, 1);
@@ -81,7 +84,7 @@ public class NewContact
         grid.add(addBtn, 1, 5);
         grid.add(cancelBtn, 0, 5);
 
-        addBtn.setOnAction(new EventHandler<ActionEvent>()
+        cancelBtn.setOnAction(new EventHandler<ActionEvent>()
         {
 			@Override
 			public void handle(ActionEvent e)
@@ -124,7 +127,7 @@ public class NewContact
 						info.setText("ivalid address format");
 						return;
 					}
-					setNewContact(new Contact(roster,"unknown",Utils.stringHash(""+Calendar.getInstance().getTimeInMillis()),ip,port));
+					setNewContact(new Contact(roster,"?unknown?",Utils.stringHash(""+Calendar.getInstance().getTimeInMillis()),ip,port));
 					//TODO: (10) create every new contant somehow unique, to add more waiting contacts into list
 					dialog.close();
 					
