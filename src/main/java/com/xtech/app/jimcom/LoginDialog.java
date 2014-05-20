@@ -100,6 +100,7 @@ public class LoginDialog
 					info.setText("username and password must be filled!");
 					return;
 				}
+        //TODO: (10) do not allow non alphanumerical characters in name
 				setReadIdentity(new SimpleIdentity(userTextField.getText(),Utils.stringHash(pwBox.getText())));
 				dialog.close();
 
