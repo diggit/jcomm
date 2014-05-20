@@ -54,7 +54,7 @@ public class GuiFXController implements Initializable, EventHandler<WindowEvent>
 	@FXML protected VBox topBox;
 	@FXML protected Stage primaryStage,stage;
 	@FXML protected Button hider;
-	@FXML protected ListView contactList;
+	@FXML protected ListView contactListView;
 	@FXML protected TextArea typingArea;
 	@FXML protected TextArea messageArea;
     @FXML protected Menu menuContact;
@@ -64,6 +64,8 @@ public class GuiFXController implements Initializable, EventHandler<WindowEvent>
     private Status status;
 
     private Roster roster;
+
+    private ObservableList contactList;
 
     public void setRoster(Roster roster)
     {
@@ -77,10 +79,12 @@ public class GuiFXController implements Initializable, EventHandler<WindowEvent>
 		statusBox.getItems().addAll(
 			Status.Online,
 			Status.Offline);
-		statusBox.getSelectionModel().select(Status.Online);
         status=Status.Online;
+        statusBox.getSelectionModel().select(status);
 		//statusBox.setSelectedIndex(0);
         lastSelectedContact=null;
+        this.contactList=FXCollections.observableArrayList();
+        this.contactListView.setItems(contactList);
 	}
 
     @FXML
@@ -137,11 +141,13 @@ public class GuiFXController implements Initializable, EventHandler<WindowEvent>
     @FXML
     public void handleDeleteContact(ActionEvent event)
     {
+        //contactList.removeAll(lastSelectedContact);
         enableContactSpecific(false);
         messageArea.clear();
         typingArea.clear();
         roster.removeContact(lastSelectedContact);
-        lastSelectedContact=(Contact)contactList.getSelectionModel().getSelectedItem();
+        lastSelectedContact=(Contact)contactListView.getSelectionModel().getSelectedItem();
+
     }
 
     @FXML
@@ -153,14 +159,19 @@ public class GuiFXController implements Initializable, EventHandler<WindowEvent>
 
     public synchronized void updateContactListView(List<Contact> contacts)
     {
-        shout(("updating contact list..."));
-        contactList.setItems(FXCollections.observableArrayList(contacts));
+        shout("updating contact list...");
+        //contactList=FXCollections.observableArrayList(contacts);
         for (Contact c :contacts )
         {
             shout("listed contact: "+c.toString());    
         }
-        resolveTypingAvailability();
+        contactList.setAll(contacts);
         //TODO: (40) what to do when something is already typed?
+        if(!contacts.contains(lastSelectedContact))//only when selected disappear
+        {
+            resolveTypingAvailability();
+            lastSelectedContact=null;
+        }
     }
 
     @FXML
@@ -188,6 +199,7 @@ public class GuiFXController implements Initializable, EventHandler<WindowEvent>
         {
             status=statusBox.getValue();
             shout("status changed to: "+status);
+            roster.setState(status);
             //TODO: (10) distribute status change to all
         }
     }
@@ -197,7 +209,7 @@ public class GuiFXController implements Initializable, EventHandler<WindowEvent>
     @FXML
     private void handleContactSelection( MouseEvent event)
     {
-        Contact selectedContact=(Contact)contactList.getSelectionModel().getSelectedItem();
+        Contact selectedContact=(Contact)contactListView.getSelectionModel().getSelectedItem();
         shout("contact selected: "+selectedContact);
         if(selectedContact==null)
         {
@@ -206,19 +218,28 @@ public class GuiFXController implements Initializable, EventHandler<WindowEvent>
         }
         if(selectedContact!=lastSelectedContact)//proceed if chosen contact was changed only
         {
+            selectedContact.setDisplayed(true);
+
+            if(lastSelectedContact!=null)
+                lastSelectedContact.setDisplayed(false);
             lastSelectedContact=selectedContact;
             enableContactSpecific(false);
 
-            String buffer="";
-            for (Message msg : selectedContact.getMessages())
-            {
-                    buffer+=msg+"\n";
-            }
-            messageArea.setText(buffer);
-
-            resolveTypingAvailability();
-
+            printMessages(selectedContact);
+            
+            //roster.updateContactList();
         }
+        resolveTypingAvailability();
+    }
+
+    private void printMessages(Contact owner)
+    {
+        String buffer="";
+        for (Message msg : owner.getMessages())
+        {
+                buffer+=msg+"\n";
+        }
+        messageArea.setText(buffer);
     }
 
     private void enableContactSpecific(Boolean en)
@@ -230,26 +251,21 @@ public class GuiFXController implements Initializable, EventHandler<WindowEvent>
 
     private void resolveTypingAvailability()
     {
-        Contact selectedContact=(Contact)contactList.getSelectionModel().getSelectedItem();
+        Contact selectedContact=(Contact)contactListView.getSelectionModel().getSelectedItem();
 
-        if(selectedContact==null)
-        {
-            shout("no contact chosen, nothing to resolve");
-            return;
-        }
-
-        if(selectedContact.isConnected())
-            typingArea.setDisable(false);
-        else
+        if(selectedContact==null || !selectedContact.isConnected())
             typingArea.setDisable(true);
+        else
+            typingArea.setDisable(false);
     }
 
-    public synchronized void handleMessageEvent(Identity local,Contact msgId)
+    public void handleMessageEvent(Identity local,Contact msgId)
     {
         if(msgId.equals(lastSelectedContact))
         {
             //event came to selected contact
-            messageArea.appendText("\n"+msgId.getLastMessage().toString());
+            //messageArea.appendText("\n"+msgId.getLastMessage().toString());
+            printMessages(lastSelectedContact);
 
         }
     }
