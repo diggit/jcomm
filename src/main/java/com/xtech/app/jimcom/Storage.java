@@ -278,10 +278,7 @@ public class Storage
 
 	private static void shout(String text)
 	{
-		//opt TODO: (90) use logger
 		System.out.println("STORAGE: "+text);
-
-
 	}
 
 	private void parseTag(String raw, String tag) throws ParseException
@@ -344,7 +341,7 @@ public class Storage
 				storeLn(out,c.getNickname());
 				storeLn(out,c.getFingerprint());
 				storeLn(out,Integer.toString(c.getPort()));
-				storeLn(out,c.getIp());
+				storeLn(out,c.getIpString());
 
 				storeLn(out,MESSAGE_LIST_START);
 				messageList=c.getMessages();
