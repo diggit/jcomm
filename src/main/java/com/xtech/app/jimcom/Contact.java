@@ -28,7 +28,7 @@ public class Contact extends Thread implements Identity
 	private Identity localID;
 	//basic ID
 	private String nickname;
-	private String figerprint;
+	private String fingerprint;
 	
 	//message history
 	private volatile List<Message> messageHistory=new ArrayList<Message>();
@@ -48,12 +48,14 @@ public class Contact extends Thread implements Identity
 	private PrintWriter out;
 	private volatile boolean running=true;
 
+	private int unreadMessages=0;
+	private boolean isDisplayed=false;
 
 	Contact(Roster roster, String nick, String fp,InetAddress ip,int port)
 	{
 		this.roster=roster;
 		this.nickname=nick;
-		this.figerprint=fp;
+		this.fingerprint=fp;
 		this.ip=ip;
 		this.port=port;
 		this.localID=roster.getIdentity();
@@ -63,19 +65,27 @@ public class Contact extends Thread implements Identity
 	{
 		this.roster=roster;
 		this.nickname=id.getNickname();
-		this.figerprint=id.getFingerprint();
+		this.fingerprint=id.getFingerprint();
 		this.sck=connection;//already valid connection
 		this.ip=connection.getInetAddress();
 		this.port=connection.getPort();
 		this.localID=roster.getIdentity();
-		this.connected=true;
+		//this.connected=true;//we need to attachn streams
+		shout("new contact with opened connection created!");
+	}
+
+	public void setDisplayed(boolean nowDisplayed)
+	{
+		if (!this.isDisplayed && nowDisplayed )//was not and now is
+			unreadMessages=0;
+		this.isDisplayed=nowDisplayed;
 	}
 
 	public void setNewLocalID(Identity id)
 	{
-		//setConnectionState(Status.Offline);
+		//setState(Status.Offline);
 		this.localID=id;
-		//setConnectionState(Status.Online);
+		//setState(Status.Online);
 	}
 
 	public void setMessageHistory(List<Message> list)
@@ -83,7 +93,7 @@ public class Contact extends Thread implements Identity
 		this.messageHistory=list;
 	}
 
-	public void setConnectionState(Status newConnectionState)
+	public void setState(Status newConnectionState)
 	{
 		if(newConnectionState==this.connectionState)
 		{
@@ -149,7 +159,7 @@ public class Contact extends Thread implements Identity
 							{
 								shout("ID mismatch, WHAT TO DO?!");
 
-								if(nickname.isEmpty()&&figerprint.isEmpty())
+								if(nickname.equals("unknown"))
 								{
 									//TODO: (20) when new contact is created, accept even when mismatching (we dont know ID yet), ID is not set known
 									;
@@ -197,7 +207,7 @@ public class Contact extends Thread implements Identity
 					{
 						shout("waiting for message...");
 						
-						while(true)//TODO: (40) verify working disconnect function when connected
+						while(this.running)//TODO: (40) verify working disconnect function when connected
 						{
 							setTimeout(0);//start to be patient in waiting for incomming message
 
@@ -288,9 +298,8 @@ public class Contact extends Thread implements Identity
 	public void exit()
 	{
 		this.running=false;
-		setConnectionState(Status.Offline);
+		setState(Status.Offline);//but before Offline is set, loop exits
 		this.interrupt();
-		shout("running interrupted");
 	}
 
 	public int getPort()
@@ -309,7 +318,7 @@ public class Contact extends Thread implements Identity
 	}
 	public String getFingerprint()
 	{
-		return figerprint;
+		return fingerprint;
 	}
 
 	public List<Message> getMessages()
@@ -329,6 +338,8 @@ public class Contact extends Thread implements Identity
 
 	private void addMessage(Message msg) //we want save all listing through to fing last message
 	{
+		if(!this.isDisplayed)
+			this.unreadMessages++;
 		messageHistory.add(msg);
 		lastMessage=msg;
 		shout("message added");
@@ -382,7 +393,15 @@ public class Contact extends Thread implements Identity
 				{
 					Identity identity=Protocol.parseIdentity(rawIncomming);
 					shout("parsed identity: "+identity);
-					if(identity.equals(this))//if remote identity matches expected one
+					if(this.getNickname().equals("?unknown?"))//automatically accept
+					{
+						this.nickname=identity.getNickname();
+						this.fingerprint=identity.getFingerprint();
+						shout("first connection, accepting");
+						output=targetState.MATCH;
+
+					}
+					else if(identity.equals(this))//if remote identity matches expected one
 					{
 						shout("target ID matching!");
 						output=targetState.MATCH;
@@ -524,48 +543,6 @@ public class Contact extends Thread implements Identity
 		this.interrupt();//proceed immediate connection
 	}
 
-
-
-	@Override
-	public String toString()
-	{
-		if(connected)
-			return nickname+"("+ip.getHostAddress()+")";
-		else
-			return nickname+"(off)";
-	}
-
-	@Override
-	public boolean equals(Object o)
-	{
-		// shout("testing equality...");
-		if(o==null)
-			return false;
-		Identity eq=(Identity)o;
-		return this.nickname.equals(eq.getNickname())&&this.figerprint.equals(eq.getFingerprint());
-		
-	}
-
-	@Override
-	public int hashCode()
-	{
-		int hash=3;
-		hash+=nickname.hashCode()*5;
-		hash+=figerprint.hashCode()*13;
-		return hash;
-	}
-
-	// private String read() throws IOException
-	// {
-	// 	//if(!connected)
-	// 	// throw new IOException("contact is not connected, can't read input");
-
-		
-	// 	String message=in.readLine().trim();
-	// 	shout("got incomming message: "+message);
-	// 	return message;
-
-	// }
 	public void sendMessage(String messageText)
 	{
 		if (messageText==null) {
@@ -582,12 +559,6 @@ public class Contact extends Thread implements Identity
 		addMessage(newOne);
 	}
 
-	private void shout(String text)
-	{
-		//opt TODO: (90) use logger
-		System.out.println("CONTACT ("+nickname+"): "+text);
-	}
-
 	private boolean setTimeout(int timeout)
 	{
 		try
@@ -600,6 +571,49 @@ public class Contact extends Thread implements Identity
 			shout("unable to set socket SO timeout! ("+timeout+")");
 			return false;
 		}
+	}
+
+	private void shout(String text)
+	{
+		//opt TODO: (90) use logger
+		System.out.println("CONTACT ("+nickname+"): "+text);
+	}
+
+
+	@Override
+	public String toString()
+	{
+		if(this.connected)
+			return nickname+"("+ip.getHostAddress()+")";
+		else
+			return nickname+"(off)";
+
+		// if(this.connected)
+		// 	if(this.unreadMessages>0)
+		// 		return String.format("%2d ", unreadMessages)+nickname+"("+ip.getHostAddress()+")";
+		// 	else
+		// 		return "   "+nickname+"("+ip.getHostAddress()+")";
+		// else
+		// 	return "   "+nickname+"(off)";
+	}
+
+
+	@Override
+	public boolean equals(Object o)
+	{
+		if(o==null)
+			return false;
+		Identity eq=(Identity)o;
+		return this.nickname.equals(eq.getNickname())&&this.fingerprint.equals(eq.getFingerprint());		
+	}
+
+	@Override
+	public int hashCode()
+	{
+		int hash=3;
+		hash+=nickname.hashCode()*5;
+		hash+=fingerprint.hashCode()*13;
+		return hash;
 	}
 
 	enum targetState
