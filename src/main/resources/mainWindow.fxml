@@ -37,7 +37,7 @@
       <children>
         <BorderPane layoutX="-86.0" layoutY="172.5" prefHeight="200.0" prefWidth="200.0">
           <center>
-            <ListView fx:id="contactList" maxWidth="1.7976931348623157E308" minWidth="-Infinity" onMouseClicked="#handleContactSelection" prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER" />
+            <ListView fx:id="contactListView" maxWidth="1.7976931348623157E308" minWidth="-Infinity" onMouseClicked="#handleContactSelection" prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER" />
           </center>
           <bottom>
             <ComboBox fx:id="statusBox" centerShape="false" depthTest="DISABLE" maxWidth="1.7976931348623157E308" minWidth="-Infinity" onAction="#handleStatuchChosen" BorderPane.alignment="CENTER" />
