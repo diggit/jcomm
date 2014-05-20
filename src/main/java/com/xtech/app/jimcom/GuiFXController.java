@@ -58,6 +58,7 @@ public class GuiFXController implements Initializable, EventHandler<WindowEvent>
 	@FXML protected TextArea typingArea;
 	@FXML protected TextArea messageArea;
     @FXML protected Menu menuContact;
+    @FXML protected Label leftStatus,rightStatus;
 
 	Contact lastSelectedContact;
 
@@ -153,7 +154,20 @@ public class GuiFXController implements Initializable, EventHandler<WindowEvent>
     @FXML
     public void handleModifyContact(ActionEvent event)
     {
-        ;
+        Contact modifying=lastSelectedContact;//latch contact
+        NewContact newContactGUI=new NewContact(modifying);
+        Contact c=newContactGUI.get(roster);
+        if(c!=null)
+        {
+            if(!modifying.getIp().equals(c.getIp()) || modifying.getPort()!=c.getPort())//ip or port changed
+            {
+                shout("contact modified, applying...");
+                Status original=modifying.getCurrentState();
+                modifying.setState(Status.Offline);
+                modifying.setConnection(c.getIp(),c.getPort());
+                modifying.setState(original);
+            }
+        }
     }
 
 
@@ -171,6 +185,7 @@ public class GuiFXController implements Initializable, EventHandler<WindowEvent>
         {
             resolveTypingAvailability();
             lastSelectedContact=null;
+            leftStatus.setText("");
         }
     }
 
@@ -200,7 +215,6 @@ public class GuiFXController implements Initializable, EventHandler<WindowEvent>
             status=statusBox.getValue();
             shout("status changed to: "+status);
             roster.setState(status);
-            //TODO: (10) distribute status change to all
         }
     }
 
@@ -223,9 +237,10 @@ public class GuiFXController implements Initializable, EventHandler<WindowEvent>
             if(lastSelectedContact!=null)
                 lastSelectedContact.setDisplayed(false);
             lastSelectedContact=selectedContact;
-            enableContactSpecific(false);
 
+            enableContactSpecific(false);
             printMessages(selectedContact);
+            leftStatus.setText(lastSelectedContact.getNickname()+"@"+lastSelectedContact.getIpString()+":"+lastSelectedContact.getPort());
             
             //roster.updateContactList();
         }
@@ -272,7 +287,6 @@ public class GuiFXController implements Initializable, EventHandler<WindowEvent>
 
     private static void shout(String text)
     {
-        //opt TODO: (90) use logger
         System.out.println("FXCONTROLLER: "+text);
     }
 }
