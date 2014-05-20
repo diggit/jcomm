@@ -89,16 +89,18 @@ public class Roster extends Thread
 		return args;
 	}
 
+	//returns identity of user on this side
 	public Identity getIdentity()
 	{
 		return local;
 	}
 
+	//sets new identity of this user
 	public void setLocalIdentity(Identity id)
 	{
 		if(id!=null)
 			if(local.equals(id))
-				shout("new identity is  same as now, ognoring");
+				shout("new identity is  same as now, ignoring");
 			else
 			{
 				shout("updating local identity");
@@ -164,11 +166,12 @@ public class Roster extends Thread
 		shout("terminated!");
 	}
 
+	//main loop
 	private void serve()
 	{
 		while(this.running)
 		{
-			if(this.state==Status.Offline)
+			if(this.state==Status.Offline)//hung in sleep loop even when woken but still in Offline mode
 			{
 				shout("roster offline, waiting for wake");
 				try
@@ -176,7 +179,7 @@ public class Roster extends Thread
 				catch(InterruptedException ex)
 					{shout("woken from offline sleep");}	
 			}
-			else if (this.state==Status.Online)
+			else if (this.state==Status.Online)//periodicaly check contatc status and push it to GUI, not important
 			{
 				shout("updating contact list...");
 				//TODO: (40) do something useful during refresh
@@ -198,12 +201,14 @@ public class Roster extends Thread
 		}
 	}
 
+	//starts termination sequence, shuts down everything
 	public void exit()
 	{
 		this.running=false;
 		this.interrupt();
 	}
 
+	//return all known contacts
 	public List<Contact> getContactList()
 	{
 		return contactList;
@@ -424,7 +429,7 @@ public class Roster extends Thread
 								else
 								{
 									shout("binding socket and bringing online!");
-									contactList.get(index).bindSocket(incommingConnection);	
+									contactList.get(index).bindSocket(incommingConnection,listener.getPort());	
 								}
 
 								
@@ -435,7 +440,7 @@ public class Roster extends Thread
 								//TODO: (20) do some decisions, accept or not? user interraction needed - GUI
 								out.println(Protocol.authResponseAccept(local));
 								shout("sent positive response");
-								this.addContact(new Contact(this,incommingIdentity,incommingConnection));
+								this.addContact(new Contact(this,incommingIdentity,incommingConnection,listener.getPort()));
 								shout("new contact added");
 							}
 							updateContactList();
@@ -458,7 +463,6 @@ public class Roster extends Thread
 	}
 	private static void shout(String text)
 	{
-		//opt TODO: (90) use logger
 		System.out.println("ROSTER: "+text);
 	}
 	
