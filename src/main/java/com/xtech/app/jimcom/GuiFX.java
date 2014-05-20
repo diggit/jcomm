@@ -48,17 +48,7 @@ import javafx.collections.*;
 public class GuiFX extends Application
 {
     private Roster roster;
-    private Logger logger;
 
-    // public GuiFX()
-    // {
-    //     ;
-    // }
-
-    // public GuiFX(Logger logger)
-    // {
-    //     this.logger=logger;
-    // }
     private static List<String> args;//OK, when no more than one instance is created and setter is not static, its ok... I hope...
     public void setArgs(List<String> args)
     {
@@ -78,6 +68,12 @@ public class GuiFX extends Application
     public void start(Stage primaryStage) {
         
         URL style=getClass().getResource("../../../../mainWindow.fxml");
+        if(style==null)
+        {
+            System.out.println("cannot load gui config file!");
+            Platform.exit();
+            return;
+        }
         VBox page=null;
 
         FXMLLoader fxmlLoader = new FXMLLoader();
