@@ -17,8 +17,8 @@ When user defines his ID, main app is started. Incomming connection listener is 
 |storing/loading contacts and messages|DONE||
 |basic chat|DONE|verified - working|
 |base GUI|DONE||
-|add new contact GUI|IP||
-|local identification GUI|IP||
+|add new contact GUI|DONE||
+|local identification GUI|DONE||
 |file transfers|OH|including hash for integrity checking|
 
 
