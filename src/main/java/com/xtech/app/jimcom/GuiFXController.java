@@ -174,7 +174,6 @@ public class GuiFXController implements Initializable, EventHandler<WindowEvent>
     public synchronized void updateContactListView(List<Contact> contacts)
     {
         shout("updating contact list...");
-        //contactList=FXCollections.observableArrayList(contacts);
         for (Contact c :contacts )
         {
             shout("listed contact: "+c.toString());    

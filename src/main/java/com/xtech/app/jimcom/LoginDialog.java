@@ -63,33 +63,34 @@ public class LoginDialog
 
 		final Stage dialog = new Stage();
 		final GridPane grid = new GridPane();
-        grid.setHgap(10);
-        grid.setVgap(10);
-        grid.setPadding(new Insets(25, 25, 25, 25));
+    grid.setHgap(10);
+    grid.setVgap(10);
+    grid.setPadding(new Insets(25, 25, 25, 25));
 
-        final Text scenetitle = new Text("Login");
-        final Label userName = new Label("User Name:");
-        final TextField userTextField = new TextField();
-        final Label pw = new Label("Password:");
-        final PasswordField pwBox = new PasswordField();
-        final Text info = new Text("");
-        final Button signBtn = new Button("Sign in");
-        final Button newayBtn = new Button("use neway");
+    final Text scenetitle = new Text("Login");
+    final Label userName = new Label("User Name:");
+    final TextField userTextField = new TextField();
+    final Label pw = new Label("Password:");
+    final PasswordField pwBox = new PasswordField();
+    final Text info = new Text("");
+    final Button signBtn = new Button("Sign in");
+    final Button newayBtn = new Button("use neway");
 
-        if(localID!=null)
-        	userTextField.setText(localID.getNickname());
+    if(localID!=null)
+    	userTextField.setText(localID.getNickname());
 
-        newayBtn.setVisible(false);
-        
-        grid.add(scenetitle, 0, 0, 2, 1);
-        grid.add(userName, 0, 1);
-        grid.add(userTextField, 1, 1);
-        grid.add(pw, 0, 2);
-        grid.add(pwBox, 1, 2);
-        grid.add(info, 0, 4, 2, 1);
-        grid.add(signBtn, 1, 5);
-        grid.add(newayBtn, 0, 5);
+    newayBtn.setVisible(false);
+    
+    grid.add(scenetitle, 0, 0, 2, 1);
+    grid.add(userName, 0, 1);
+    grid.add(userTextField, 1, 1);
+    grid.add(pw, 0, 2);
+    grid.add(pwBox, 1, 2);
+    grid.add(info, 0, 4, 2, 1);
+    grid.add(signBtn, 1, 5);
+    grid.add(newayBtn, 0, 5);
 
+        //force actual settings, as login
 		newayBtn.setOnAction(new EventHandler<ActionEvent>()
 		{
 			@Override

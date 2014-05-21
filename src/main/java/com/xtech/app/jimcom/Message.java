@@ -32,6 +32,8 @@ public class Message
 
 	private final long stampInMillis;
 
+	//basic contrusctor
+
 	public Message(String text, Identity sender, Identity target)
 	{
 		this.msg=text;
@@ -45,6 +47,7 @@ public class Message
 		this.dateStamp=dateFormat.format(date);
 	}
 
+	//constructor for definition of message time (used when loaded from file)
 	public Message(String text, Identity sender, Identity target, long millis )
 	{
 		this.msg=text;

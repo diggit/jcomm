@@ -99,11 +99,11 @@ public class GuiFX extends Application
         Storage storage=new Storage("storedData");
         Identity storedIdentity=storage.getIdentity();
         
-        //compare it to login
+        //compare it to entered login
         LoginDialog login=new LoginDialog(storedIdentity);
         Identity local=login.login(true);
         login = null; //we dont need it anymore
-        if(local==null)
+        if(local==null)//if terminated, stop it here
         {
             System.out.println("authetification failed, terminating!");
             Platform.exit();

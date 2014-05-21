@@ -48,12 +48,15 @@ public class Storage
 
 
 
+	//with this constructor used, only local identity could be read
 	public Storage(String fileName)
 	{
 		this.roster=null;
 		this.fileName=fileName;
 		shout("assigned file "+fileName);
 	}
+
+	//with this construcor used, local identity and contact could be read
 	public Storage(Roster roster,String fileName)
 	{
 		this.roster=roster;
@@ -81,7 +84,7 @@ public class Storage
 	public void load()
 	{
 		//TODO: (30) skip empty lines
-		if(loaded)
+		if(loaded)//prevent multiple reloads of file
 			return;
 
 		loaded=true;
@@ -294,6 +297,7 @@ public class Storage
 	}
 
 
+	//store all settings woth contacts an their messages
 	public void store(List<Contact> contactList)
 	{
 		if (contactList==null) {

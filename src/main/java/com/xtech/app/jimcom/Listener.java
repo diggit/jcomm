@@ -129,6 +129,7 @@ public class Listener extends Thread
 		System.out.println("LISTENER: "+text);
 	}
 
+	//switching between online/offline mode
 	public void setState(Status newServerState)
 	{
 		if(newServerState==this.serverState)

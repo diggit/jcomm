@@ -45,6 +45,7 @@ import java.net.*;
 
 import org.xtech.app.jimcom.*;
 
+//gui window with IP and port fields, returns new Contact or null when canceled
 public class NewContact
 {
 	Contact newID;
@@ -93,7 +94,7 @@ public class NewContact
         grid.add(addBtn, 1, 5);
         grid.add(cancelBtn, 0, 5);
 
-        if (preset!=null)//if preset exist, fill it
+        if (preset!=null)//if preset exist, fill with it fields
         {
             addressField.setText(preset.getIpString());
             portField.setText(""+preset.getPort());
