@@ -4,7 +4,7 @@
 
 JIMcom is simple java Instant Messenger. It uses server-less topology (NAT restricted). All local settings will be stored in plaintext in file. 
 
-###Current state summary
+### Current state summary
 When user defines his ID, main app is started. Incomming connection listener is started and all known contacts starts atempting for connections to their targets. When incomming connection of unknown ID is received, contact is automaticaly added to contact list. Known contacts are modifiable as well as local ID. All setting and contacts are stored at exit.
 
 ### progress
@@ -26,8 +26,8 @@ When user defines his ID, main app is started. Incomming connection listener is 
 *IP - In Progress*
 
 
-### additional features
 (most won't be implemented due to insufficient time)
+### additional features
 |feature|status|note|
 |----|---|---|
 |keyboard shortcuts|optional||
